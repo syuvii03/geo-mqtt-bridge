@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แผงควบคุมไฟฟ้า (MQTT)</title>
+<style>
+  :root {
+    --bg: #0B0E11; --panel: #151A20; --panel-alt: #1B2229; --panel-raised: #1F2730;
+    --on-color: #5EEAD4; --on-glow: rgba(94, 234, 212, 0.45); --off-color: #4B5563;
+    --warn-color: #FF8A5B; --text-primary: #EDEFF2; --text-secondary: #8B94A0;
+    --text-dim: #565F6B; --border: #242C35; --border-light: #313B47;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh; padding: 20px 16px 60px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .title-block .eyebrow { font-family: monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+  .title-block h1 { font-size: 24px; font-weight: 700; }
+  .conn-status { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; background: var(--panel); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--off-color); }
+  .dot.live { background: var(--on-color); box-shadow: 0 0 8px var(--on-glow); }
+
+  .config-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .config-panel label { font-family: monospace; font-size: 11px; color: var(--text-secondary); }
+  .config-panel input { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-primary); font-family: monospace; font-size: 13px; padding: 6px 10px; border-radius: 6px; flex: 1; min-width: 140px; }
+  .btn-connect { background: var(--panel-raised); border: 1px solid var(--border-light); color: var(--text-primary); font-weight: 600; font-size: 12px; padding: 7px 14px; border-radius: 6px; cursor: pointer; }
+  .btn-connect:hover { border-color: var(--on-color); color: var(--on-color); }
+  .config-hint { font-family: monospace; font-size: 10px; color: var(--text-dim); width: 100%; }
+  .config-panel input[type="checkbox"] { flex: none; width: 16px; height: 16px; min-width: 0; accent-color: var(--on-color); cursor: pointer; }
+  .config-panel input[type="number"] { flex: none; }
+  .geo-check-label { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; color: var(--text-secondary); cursor: pointer; flex: none; }
+  .geo-status { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .auto-check-label { display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 10px; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); cursor: pointer; }
+  .auto-check-label input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--on-color); cursor: pointer; }
+
+  .cost-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .cost-item { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+  .cost-label { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+  .cost-value { font-family: monospace; font-size: 24px; font-weight: 600; }
+  .cost-value.accent { color: var(--on-color); }
+
+  .chart-card { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+  .chart-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
+  .chart-box { width: 100%; height: 180px; background: var(--panel-alt); border-radius: 8px; border: 1px solid var(--border-light); position: relative; }
+  svg { width: 100%; height: 100%; overflow: visible; }
+  .chart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .chart-fill { stroke: none; }
+  .chart-dot { filter: drop-shadow(0 0 3px currentColor); }
+  .grid-line { stroke: var(--border); stroke-dasharray: 4,4; stroke-width: 1; }
+  .chart-axis { position: absolute; left: 8px; top: 0; right: 0; height: 100%; pointer-events: none; }
+  .chart-axis span { position: absolute; left: 0; transform: translateY(-50%); font-family: monospace; font-size: 10px; color: var(--text-dim); }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+  .chart-legend-item { display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 11px; color: var(--text-secondary); }
+  .chart-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .chart-legend-val { color: var(--text-primary); font-weight: 600; }
+
+  .rack-label { font-family: monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; margin: 12px 0 8px; }
+  .breaker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .breaker { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: border-color 0.25s; }
+  .breaker.is-on { border-color: rgba(94,234,212,0.4); }
+  .breaker-top { display: flex; justify-content: space-between; margin-bottom: 14px; }
+  .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); }
+  .breaker-name { font-size: 16px; font-weight: 600; }
+  .led { width: 10px; height: 10px; border-radius: 50%; background: var(--off-color); }
+  .breaker.is-on .led { background: var(--on-color); box-shadow: 0 0 10px var(--on-glow); }
+
+  .breaker-mid { display: flex; align-items: center; justify-content: space-between; }
+  .status-text { font-family: monospace; font-size: 12px; color: var(--text-secondary); }
+  .breaker.is-on .status-text { color: var(--on-color); }
+  .switch-track { width: 44px; height: 72px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 4px; cursor: pointer; }
+  .switch-track.disabled { cursor: not-allowed; opacity: 0.5; }
+  .switch-thumb { width: 34px; height: 32px; background: #3B4048; border-radius: 6px; transition: transform 0.2s ease; }
+  .switch-track.on .switch-thumb { transform: translateY(30px); background: #5EEAD4; box-shadow: 0 0 10px var(--on-glow); }
+
+  .device-cost { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-family: monospace; font-size: 12px; }
+
+  .util-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .util-btn { background: transparent; border: 1px dashed var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 11px; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+  .util-btn:hover { border-color: var(--on-color); color: var(--on-color); }
+
+  footer { margin-top: 24px; font-family: monospace; font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+  footer code { background: var(--panel); padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title-block">
+      <div class="eyebrow">HOME AUTOMATION / MQTT</div>
+      <h1>แผงควบคุมไฟฟ้า</h1>
+    </div>
+    <div class="conn-status">
+      <span class="dot" id="connDot"></span>
+      <span id="connText">ยังไม่ได้เชื่อมต่อ</span>
+    </div>
+  </header>
+
+  <div class="config-panel">
+    <label>BROKER HOST</label>
+    <input id="cfgHost" type="text" placeholder="xxxxx.s1.eu.hivemq.cloud">
+    <label>PORT (WSS)</label>
+    <input id="cfgPort" type="text" value="8884" style="max-width:70px;">
+    <label>USERNAME</label>
+    <input id="cfgUser" type="text" placeholder="esp32user">
+    <label>PASSWORD</label>
+    <input id="cfgPass" type="password" placeholder="••••••••">
+    <label>PREFIX</label>
+    <input id="cfgPrefix" type="text" value="myhome" style="max-width:100px;">
+    <label>ค่าไฟ (บาท/หน่วย)</label>
+    <input id="cfgRate" type="number" step="0.01" value="4.40" style="max-width:80px;">
+    <button class="btn-connect" id="btnConnect" onclick="handleConnectClick()">เชื่อมต่อ</button>
+    <div class="config-hint">ค่าที่กรอกจะถูกจำไว้ในเบราว์เซอร์นี้ (localStorage) ไม่ได้ส่งไปที่ไหน นอกจากไปที่ broker ที่ระบุเอง</div>
+  </div>
+
+  <div class="config-panel" id="geoPanel">
+    <label>ตำแหน่งบอร์ด (Lat)</label>
+    <input id="geoLat" type="text" placeholder="13.756300" style="max-width:120px;" onchange="onGeoLatLngChange()">
+    <label>ตำแหน่งบอร์ด (Lng)</label>
+    <input id="geoLng" type="text" placeholder="100.501800" style="max-width:120px;" onchange="onGeoLatLngChange()">
+    <button class="btn-connect" onclick="useCurrentLocationAsBoard()">📍 ใช้ตำแหน่งปัจจุบันเป็นตำแหน่งบอร์ด</button>
+    <label>ระยะเปิดอัตโนมัติ (เมตร)</label>
+    <input id="geoThreshold" type="number" value="1" min="1" style="max-width:80px;" onchange="onGeoThresholdChange()">
+    <label class="geo-check-label">
+      <input id="geoEnabled" type="checkbox" onchange="onGeoEnabledChange()">
+      เปิดใช้งานเปิด/ปิดอัตโนมัติตามระยะ
+    </label>
+    <div class="config-hint">ต้องกดยอมรับให้เว็บนี้เข้าถึงตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน • เลือกอุปกรณ์ที่ต้องการรวมในระบบอัตโนมัติได้ที่การ์ดอุปกรณ์ด้านล่าง (เช็คบ็อกซ์ "รวมในระบบอัตโนมัติ") • Geolocation อาจใช้ไม่ได้ถ้าเปิดไฟล์ผ่าน file:// โดยตรงในบางเบราว์เซอร์ ลองรันผ่าน localhost หรือ HTTPS หากอ่านตำแหน่งไม่ได้</div>
+  </div>
+
+  <div class="cost-summary">
+    <div class="cost-item">
+      <div class="cost-label">พลังงานรวม (ตั้งแต่บอร์ดล่าสุดรีสตาร์ท)</div>
+      <div class="cost-value" id="totalKwh">0.000 kWh</div>
+    </div>
+    <div class="cost-item">
+      <div class="cost-label">ค่าไฟรวมโดยประมาณ</div>
+      <div class="cost-value accent" id="totalCost">฿0.00</div>
+    </div>
+    <div class="cost-item">
+      <div class="cost-label">ระยะห่างจากบอร์ด</div>
+      <div class="cost-value" id="geoDistance">--</div>
+      <div class="geo-status" id="geoStatus">ยังไม่ได้เปิดใช้งาน</div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-head">
+      <span>การใช้พลังงานแบบเรียลไทม์ (วัตต์)</span>
+      <span style="font-size:11px; color:var(--on-color);" id="liveTag">● LIVE</span>
+    </div>
+    <div class="chart-box">
+      <svg id="svgChart" viewBox="0 0 500 180" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="grad0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5EEAD4" stop-opacity="0.35"/><stop offset="100%" stop-color="#5EEAD4" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF8A5B" stop-opacity="0.35"/><stop offset="100%" stop-color="#FF8A5B" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7DD3FC" stop-opacity="0.35"/><stop offset="100%" stop-color="#7DD3FC" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C4B5FD" stop-opacity="0.35"/><stop offset="100%" stop-color="#C4B5FD" stop-opacity="0"/></linearGradient>
+        </defs>
+        <line x1="0" y1="20" x2="500" y2="20" class="grid-line" />
+        <line x1="0" y1="70" x2="500" y2="70" class="grid-line" />
+        <line x1="0" y1="120" x2="500" y2="120" class="grid-line" />
+        <line x1="0" y1="170" x2="500" y2="170" class="grid-line" />
+        <g id="chartFills"></g>
+        <g id="chartLines"></g>
+        <g id="chartDots"></g>
+      </svg>
+      <div class="chart-axis">
+        <span style="top:11.1%">1500W</span>
+        <span style="top:38.9%">1000W</span>
+        <span style="top:66.7%">500W</span>
+        <span style="top:94.4%">0W</span>
+      </div>
+    </div>
+    <div class="chart-legend" id="chartLegend"></div>
+  </div>
+
+  <div class="rack-label">อุปกรณ์</div>
+  <div class="breaker-grid" id="breakerGrid">
+    <div style="font-family:monospace; font-size:12px; color:var(--text-dim);">กรอกข้อมูล broker ด้านบนแล้วกด "เชื่อมต่อ" เพื่อแสดงอุปกรณ์</div>
+  </div>
+
+  <div class="util-row">
+    <button class="util-btn" onclick="exportCsv()">⬇ ส่งออก CSV</button>
+  </div>
+
+  <footer>
+    Topic ควบคุม: <code id="footCtrl">-</code><br>
+    Topic สถานะรวม: <code id="footStatus">-</code><br>
+    หมายเหตุ: อุปกรณ์และกำลังไฟ (วัตต์) ถูกกำหนดไว้ในโค้ด ESP32 โดยตรง หน้าเว็บนี้จะแสดงอุปกรณ์ตามที่ ESP32 ส่งข้อมูล telemetry เข้ามาเท่านั้น
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+<script>
+  // ---------- ตั้งค่าทั่วไป ----------
+  let rate = 4.40;
+  let prefix = "myhome";
+  let client = null;
+  let connected = false;
+
+  // devices[id] = { name, watt, state, kwh }
+  let devices = {};
+  const COLORS = ['#5EEAD4', '#FF8A5B', '#7DD3FC', '#C4B5FD'];
+  const DEVICE_NAMES = { aircon: "แอร์", light: "ไฟ", fan: "พัดลม", plug: "ปลั๊กไฟทั่วไป" };
+
+  let historyData = {}; // สำหรับกราฟเรียลไทม์ (เก็บย้อนหลัง 30 จุด ต่ออุปกรณ์)
+
+  // ---------- ระบบเปิด/ปิดอัตโนมัติตามระยะห่าง (Geofencing) ----------
+  let geoLat = null, geoLng = null, geoThreshold = 1, geoEnabled = false;
+  let geoWatchId = null;
+  let autoDeviceIds = new Set(); // อุปกรณ์ที่เลือกให้เข้าระบบอัตโนมัติ
+  let insideZone = null;         // null = ยังไม่รู้สถานะ, true/false = อยู่ในระยะ/นอกระยะล่าสุด
+  let lastAutoActionAt = 0;
+  const GEO_COOLDOWN_MS = 10000;   // กันสั่งเปิด/ปิดถี่เกินไป
+  const GEO_HYSTERESIS_M = 15;     // ระยะกันชนกัน GPS แกว่งแล้วสวิตช์รัว
+  let distanceBuffer = [];         // เก็บระยะล่าสุดไว้หาค่ามัธยฐาน (กรอง spike)
+  const GEO_BUFFER_SIZE = 5;
+  const GEO_MAX_ACCURACY_M = 100;  // ทิ้งค่าที่ GPS ไม่แม่นยำเกินนี้ (เมตร)
+  let pendingSide = null;          // ฝั่งที่กำลังรอการยืนยัน ('in' / 'out')
+  let sideStreak = 0;              // จำนวนครั้งติดต่อกันที่อยู่ฝั่งเดียวกัน
+  const GEO_CONFIRM_COUNT = 3;     // ต้องยืนยันกี่ครั้งติดกันก่อนสั่งเปลี่ยนสถานะจริง
+
+  // ---------- โหลด/บันทึกค่า config จาก localStorage ----------
+  function loadConfig() {
+    const saved = localStorage.getItem("mqtt_dashboard_config");
+    if (!saved) return;
+    try {
+      const cfg = JSON.parse(saved);
+      document.getElementById("cfgHost").value = cfg.host || "";
+      document.getElementById("cfgPort").value = cfg.port || "8884";
+      document.getElementById("cfgUser").value = cfg.user || "";
+      document.getElementById("cfgPrefix").value = cfg.prefix || "myhome";
+      document.getElementById("cfgRate").value = cfg.rate || 4.40;
+      // ไม่บันทึกรหัสผ่านไว้ ให้ผู้ใช้กรอกใหม่ทุกครั้งเพื่อความปลอดภัยขั้นต่ำ
+    } catch (e) {}
+  }
+
+  function saveConfig() {
+    const cfg = {
+      host: document.getElementById("cfgHost").value,
+      port: document.getElementById("cfgPort").value,
+      user: document.getElementById("cfgUser").value,
+      prefix: document.getElementById("cfgPrefix").value,
+      rate: document.getElementById("cfgRate").value
+    };
+    localStorage.setItem("mqtt_dashboard_config", JSON.stringify(cfg));
+  }
+
+  function setConnected(isConnected) {
+    connected = isConnected;
+    const dot = document.getElementById("connDot");
+    const text = document.getElementById("connText");
+    dot.classList.toggle("live", isConnected);
+    text.textContent = isConnected ? "เชื่อมต่อ MQTT Broker แล้ว" : "ไม่ได้เชื่อมต่อ";
+    document.getElementById("btnConnect").textContent = isConnected ? "ตัดการเชื่อมต่อ" : "เชื่อมต่อ";
+  }
+
+  // ---------- ปุ่มเชื่อมต่อ / ตัดการเชื่อมต่อ ----------
+  function handleConnectClick() {
+    if (connected) {
+      if (client) client.end(true);
+      setConnected(false);
+      return;
+    }
+    connectMqtt();
+  }
+
+  function connectMqtt() {
+    const host = document.getElementById("cfgHost").value.trim();
+    const port = document.getElementById("cfgPort").value.trim();
+    const user = document.getElementById("cfgUser").value.trim();
+    const pass = document.getElementById("cfgPass").value.trim();
+    prefix = document.getElementById("cfgPrefix").value.trim() || "myhome";
+    rate = parseFloat(document.getElementById("cfgRate").value) || 4.40;
+
+    if (!host || !user || !pass) {
+      alert("กรุณากรอก Broker Host, Username และ Password ให้ครบก่อนเชื่อมต่อ");
+      return;
+    }
+
+    saveConfig();
+
+    // HiveMQ Cloud ใช้ WebSocket แบบ wss:// ผ่าน path /mqtt
+    const url = `wss://${host}:${port}/mqtt`;
+
+    client = mqtt.connect(url, {
+      username: user,
+      password: pass,
+      clean: true,
+      reconnectPeriod: 3000,
+      connectTimeout: 8000
+    });
+
+    client.on('connect', () => {
+      setConnected(true);
+      client.subscribe(`${prefix}/telemetry`);
+      client.subscribe(`${prefix}/+/state`);
+      document.getElementById("footCtrl").textContent = `${prefix}/<device>/set`;
+      document.getElementById("footStatus").textContent = `${prefix}/telemetry`;
+    });
+
+    client.on('reconnect', () => setConnected(false));
+    client.on('close', () => setConnected(false));
+    client.on('error', (err) => {
+      console.error("MQTT error:", err);
+      setConnected(false);
+      // ถ้าโดนปฏิเสธเพราะ auth/permission ผิด ให้หยุดเชื่อมต่อทันที
+      // ไม่ปล่อยให้ reconnect ยิงซ้ำรัวๆ ทุก 3 วิ จนโบรกเกอร์บล็อกชั่วคราว
+      const msg = (err && err.message) || "";
+      if (msg.includes("Not authorized") || msg.includes("Bad username or password") || msg.includes("not authorized")) {
+        client.end(true);
+        alert("เชื่อมต่อไม่สำเร็จ: Not authorized\nกรุณาตรวจสอบ Username/Password และสถานะ Broker อีกครั้ง");
+      }
+    });
+
+    client.on('message', (topic, payload) => {
+      handleMessage(topic, payload.toString());
+    });
+  }
+
+  // ---------- จัดการข้อความที่ได้รับจาก MQTT ----------
+  function handleMessage(topic, message) {
+    const parts = topic.split('/');
+
+    if (parts.length === 2 && parts[1] === 'telemetry') {
+      try {
+        const data = JSON.parse(message);
+        Object.keys(data).forEach(key => {
+          if (key === 'totalKwh') return;
+          const d = data[key];
+          if (!devices[key]) {
+            devices[key] = { name: DEVICE_NAMES[key] || key, watt: d.watt, state: d.state, kwh: d.kwh };
+          } else {
+            devices[key].watt = d.watt;
+            devices[key].state = d.state;
+            devices[key].kwh = d.kwh;
+          }
+        });
+        renderBreakers();
+        renderCostSummary(data.totalKwh || 0);
+        updateChartHistory();
+      } catch (e) {
+        console.error("แปลง telemetry JSON ไม่สำเร็จ:", e);
+      }
+      return;
+    }
+
+    if (parts.length === 3 && parts[2] === 'state') {
+      const id = parts[1];
+      if (devices[id]) {
+        devices[id].state = (message === "ON");
+        renderBreakers();
+      }
+    }
+  }
+
+  // ---------- ส่งคำสั่งเปิด/ปิด ----------
+  function toggleDevice(id) {
+    if (!connected || !devices[id]) return;
+    const newState = !devices[id].state;
+    // อัปเดตหน้าจอทันทีแบบ optimistic แล้วรอ ESP32 ยืนยันกลับผ่าน .../state
+    devices[id].state = newState;
+    renderBreakers();
+    client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF");
+  }
+
+  // ---------- วาดการ์ดอุปกรณ์ ----------
+  function renderBreakers() {
+    const grid = document.getElementById("breakerGrid");
+    const ids = Object.keys(devices);
+    if (ids.length === 0) {
+      grid.innerHTML = `<div style="font-family:monospace; font-size:12px; color:var(--text-dim);">รอรับข้อมูลจาก ESP32... (ตรวจสอบว่าบอร์ดเปิดอยู่และเชื่อมต่อ MQTT สำเร็จ)</div>`;
+      return;
+    }
+    grid.innerHTML = "";
+    ids.forEach((id, i) => {
+      const dev = devices[id];
+      const isOn = dev.state;
+      const cost = (dev.kwh || 0) * rate;
+      const card = document.createElement("div");
+      card.className = "breaker" + (isOn ? " is-on" : "");
+      card.innerHTML = `
+        <div class="breaker-top">
+          <div>
+            <div class="breaker-num">${id.toUpperCase()}</div>
+            <div class="breaker-name">${dev.name}</div>
+          </div>
+          <div class="led"></div>
+        </div>
+        <div class="breaker-mid">
+          <div class="status-text">${isOn ? "กำลังทำงาน" : "ปิดอยู่"}</div>
+          <div class="switch-track ${isOn ? 'on' : ''} ${connected ? '' : 'disabled'}" onclick="toggleDevice('${id}')">
+            <div class="switch-thumb"></div>
+          </div>
+        </div>
+        <div class="device-cost">
+          <span style="color:var(--text-secondary);">${dev.watt} W</span>
+          <span style="color:var(--on-color); font-weight:600;">฿${cost.toFixed(2)}</span>
+        </div>
+        <label class="auto-check-label">
+          <input type="checkbox" ${autoDeviceIds.has(id) ? 'checked' : ''} onchange="toggleAutoDevice('${id}', this.checked)">
+          รวมในระบบเปิด/ปิดอัตโนมัติตามระยะ
+        </label>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // ---------- สรุปพลังงาน/ค่าไฟรวม ----------
+  function renderCostSummary(totalKwh) {
+    document.getElementById("totalKwh").textContent = totalKwh.toFixed(3) + " kWh";
+    document.getElementById("totalCost").textContent = "฿" + (totalKwh * rate).toFixed(2);
+  }
+
+  // ---------- กราฟเรียลไทม์ ----------
+  function toSmoothPath(pts) {
+    if (pts.length < 2) return pts.length ? `M ${pts[0].x},${pts[0].y}` : "";
+    let d = `M ${pts[0].x},${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const xc = (pts[i].x + pts[i - 1].x) / 2;
+      const yc = (pts[i].y + pts[i - 1].y) / 2;
+      d += ` Q ${pts[i - 1].x},${pts[i - 1].y} ${xc},${yc}`;
+    }
+    const last = pts[pts.length - 1];
+    d += ` L ${last.x},${last.y}`;
+    return d;
+  }
+
+  function updateChartHistory() {
+    Object.keys(devices).forEach(id => {
+      if (!historyData[id]) historyData[id] = [];
+      const val = devices[id].state ? devices[id].watt : 0;
+      historyData[id].push(val);
+      if (historyData[id].length > 30) historyData[id].shift();
+    });
+    renderChart();
+  }
+
+  function renderChart() {
+    const linesG = document.getElementById("chartLines");
+    const fillsG = document.getElementById("chartFills");
+    const dotsG = document.getElementById("chartDots");
+    const legend = document.getElementById("chartLegend");
+    linesG.innerHTML = ""; fillsG.innerHTML = ""; dotsG.innerHTML = ""; legend.innerHTML = "";
+
+    const ids = Object.keys(devices);
+    ids.forEach((id, i) => {
+      const hist = historyData[id] || [];
+      if (hist.length === 0) return;
+      const color = COLORS[i % COLORS.length];
+      const pts = hist.map((v, idx) => ({
+        x: (idx / Math.max(1, hist.length - 1)) * 500,
+        y: 170 - (Math.min(v, 1500) / 1500) * 150
+      }));
+      const d = toSmoothPath(pts);
+      const last = pts[pts.length - 1];
+
+      const fill = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      fill.setAttribute("d", `${d} L ${last.x},170 L 0,170 Z`);
+      fill.setAttribute("class", "chart-fill");
+      fill.setAttribute("fill", `url(#grad${i % COLORS.length})`);
+      fillsG.appendChild(fill);
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      line.setAttribute("d", d);
+      line.setAttribute("class", "chart-line");
+      line.setAttribute("stroke", color);
+      line.style.filter = `drop-shadow(0 0 3px ${color}aa)`;
+      linesG.appendChild(line);
+
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", last.x); dot.setAttribute("cy", last.y); dot.setAttribute("r", 3.5);
+      dot.setAttribute("fill", color); dot.setAttribute("class", "chart-dot");
+      dotsG.appendChild(dot);
+
+      const item = document.createElement("div");
+      item.className = "chart-legend-item";
+      const watt = devices[id].state ? devices[id].watt : 0;
+      item.innerHTML = `<span class="chart-legend-dot" style="background:${color}"></span>${devices[id].name} <span class="chart-legend-val">${watt}W</span>`;
+      legend.appendChild(item);
+    });
+  }
+
+  // ---------- โหลด/บันทึกค่า geofencing จาก localStorage ----------
+  function loadGeoConfig() {
+    const saved = localStorage.getItem("mqtt_dashboard_geo");
+    if (saved) {
+      try {
+        const cfg = JSON.parse(saved);
+        geoLat = (cfg.lat === null || cfg.lat === undefined) ? null : cfg.lat;
+        geoLng = (cfg.lng === null || cfg.lng === undefined) ? null : cfg.lng;
+        geoThreshold = cfg.threshold || 1;
+        geoEnabled = !!cfg.enabled;
+        autoDeviceIds = new Set(cfg.autoDeviceIds || []);
+      } catch (e) {}
+    }
+    document.getElementById("geoLat").value = geoLat !== null ? geoLat : "";
+    document.getElementById("geoLng").value = geoLng !== null ? geoLng : "";
+    document.getElementById("geoThreshold").value = geoThreshold;
+    document.getElementById("geoEnabled").checked = geoEnabled;
+    if (geoEnabled && geoLat !== null && geoLng !== null) startGeoWatch();
+  }
+
+  function saveGeoConfig() {
+    const cfg = {
+      lat: geoLat, lng: geoLng, threshold: geoThreshold,
+      enabled: geoEnabled, autoDeviceIds: Array.from(autoDeviceIds)
+    };
+    localStorage.setItem("mqtt_dashboard_geo", JSON.stringify(cfg));
+  }
+
+  // ---------- ปักหมุดตำแหน่งบอร์ดจากตำแหน่งปัจจุบันของเบราว์เซอร์ ----------
+  function useCurrentLocationAsBoard() {
+    if (!navigator.geolocation) {
+      alert("เบราว์เซอร์นี้ไม่รองรับ Geolocation API");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        geoLat = pos.coords.latitude;
+        geoLng = pos.coords.longitude;
+        document.getElementById("geoLat").value = geoLat.toFixed(6);
+        document.getElementById("geoLng").value = geoLng.toFixed(6);
+        saveGeoConfig();
+        alert("บันทึกตำแหน่งบอร์ดจากตำแหน่งปัจจุบันเรียบร้อย: " + geoLat.toFixed(6) + ", " + geoLng.toFixed(6));
+      },
+      (err) => {
+        alert("ไม่สามารถอ่านตำแหน่งปัจจุบันได้: " + err.message + "\nตรวจสอบว่าอนุญาต Location ให้เว็บนี้แล้ว และเปิดหน้าเว็บผ่าน HTTPS หรือ localhost");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  function onGeoLatLngChange() {
+    const lat = parseFloat(document.getElementById("geoLat").value);
+    const lng = parseFloat(document.getElementById("geoLng").value);
+    geoLat = isNaN(lat) ? null : lat;
+    geoLng = isNaN(lng) ? null : lng;
+    saveGeoConfig();
+  }
+
+  function onGeoThresholdChange() {
+    geoThreshold = parseFloat(document.getElementById("geoThreshold").value) || 1;
+    insideZone = null; // เกณฑ์เปลี่ยน ให้ประเมินสถานะใหม่รอบถัดไป
+    distanceBuffer = [];
+    pendingSide = null;
+    sideStreak = 0;
+    saveGeoConfig();
+  }
+
+  function onGeoEnabledChange() {
+    geoEnabled = document.getElementById("geoEnabled").checked;
+    if (geoEnabled && (geoLat === null || geoLng === null)) {
+      alert('กรุณาระบุตำแหน่งบอร์ด (Lat/Lng) หรือกดปุ่ม "ใช้ตำแหน่งปัจจุบันเป็นตำแหน่งบอร์ด" ก่อนเปิดใช้งาน');
+      document.getElementById("geoEnabled").checked = false;
+      geoEnabled = false;
+      saveGeoConfig();
+      return;
+    }
+    if (geoEnabled) startGeoWatch(); else stopGeoWatch();
+    saveGeoConfig();
+  }
+
+  function startGeoWatch() {
+    if (!navigator.geolocation) {
+      document.getElementById("geoStatus").textContent = "เบราว์เซอร์นี้ไม่รองรับ Geolocation";
+      return;
+    }
+    if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
+    insideZone = null;
+    distanceBuffer = [];
+    pendingSide = null;
+    sideStreak = 0;
+    geoWatchId = navigator.geolocation.watchPosition(
+      handlePositionUpdate,
+      (err) => { document.getElementById("geoStatus").textContent = "อ่านตำแหน่งไม่ได้: " + err.message; },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+  }
+
+  function stopGeoWatch() {
+    if (geoWatchId !== null) {
+      navigator.geolocation.clearWatch(geoWatchId);
+      geoWatchId = null;
+    }
+    document.getElementById("geoDistance").textContent = "--";
+    document.getElementById("geoStatus").textContent = "ยังไม่ได้เปิดใช้งาน";
+    insideZone = null;
+  }
+
+  // สูตร Haversine: คำนวณระยะทางตรง (เมตร) ระหว่างพิกัด 2 จุดบนโลก
+  function calcDistanceMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  function median(arr) {
+    const s = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  }
+
+  function handlePositionUpdate(pos) {
+    if (geoLat === null || geoLng === null) return;
+    const rawDist = calcDistanceMeters(geoLat, geoLng, pos.coords.latitude, pos.coords.longitude);
+    const accuracy = pos.coords.accuracy || 9999;
+
+    // ทิ้งค่าที่ความแม่นยำแย่เกินไป (accuracy = รัศมีความไม่แน่นอน หน่วยเมตร)
+    if (accuracy > GEO_MAX_ACCURACY_M) {
+      document.getElementById("geoStatus").textContent =
+        `สัญญาณ GPS ไม่แม่นยำพอ (±${accuracy.toFixed(0)} ม.) กำลังรอสัญญาณที่ดีกว่า`;
+      return;
+    }
+
+    // เก็บค่าไว้หาค่ามัธยฐาน กันจุดที่กระโดดผิดปกติ (spike) จากค่าเดี่ยวๆ
+    distanceBuffer.push(rawDist);
+    if (distanceBuffer.length > GEO_BUFFER_SIZE) distanceBuffer.shift();
+    const smoothDist = median(distanceBuffer);
+
+    document.getElementById("geoDistance").textContent =
+      smoothDist < 1000 ? `${smoothDist.toFixed(0)} ม.` : `${(smoothDist / 1000).toFixed(2)} กม.`;
+
+    const nowInside = smoothDist <= geoThreshold;
+    document.getElementById("geoStatus").textContent =
+      (nowInside ? "อยู่ในระยะ ✓" : "อยู่นอกระยะ") +
+      ` (เกณฑ์ ${geoThreshold} ม. • GPS ±${accuracy.toFixed(0)} ม.)`;
+
+    evaluateAutoControl(smoothDist);
+  }
+
+  // ตัดสินใจสั่งเปิด/ปิดอุปกรณ์ที่เลือกไว้ โดยต้องยืนยันซ้ำหลายครั้งติดกัน (กัน spike)
+  // + มีระยะกันชน (hysteresis) + ช่วงกันสั่งถี่ (cooldown)
+  function evaluateAutoControl(dist) {
+    if (!geoEnabled || !connected || autoDeviceIds.size === 0) return;
+
+    const enterBoundary = geoThreshold;
+    const exitBoundary = geoThreshold + GEO_HYSTERESIS_M;
+
+    let currentSide = null;
+    if (dist <= enterBoundary) currentSide = 'in';
+    else if (dist > exitBoundary) currentSide = 'out';
+    // ถ้าอยู่ในโซนกันชนระหว่างสองเส้น ไม่นับเป็นฝั่งไหน รอข้อมูลรอบถัดไป
+
+    if (currentSide === null) { pendingSide = null; sideStreak = 0; return; }
+
+    if (currentSide === pendingSide) {
+      sideStreak++;
+    } else {
+      pendingSide = currentSide;
+      sideStreak = 1;
+    }
+
+    if (sideStreak < GEO_CONFIRM_COUNT) return; // ยืนยันไม่ครบจำนวนครั้ง ยังไม่สั่งงาน
+
+    const now = Date.now();
+    if (now - lastAutoActionAt < GEO_COOLDOWN_MS) return;
+
+    if (currentSide === 'in' && insideZone !== true) {
+      insideZone = true;
+      lastAutoActionAt = now;
+      autoDeviceIds.forEach(id => { if (devices[id] && !devices[id].state) toggleDevice(id); });
+    } else if (currentSide === 'out' && insideZone !== false) {
+      insideZone = false;
+      lastAutoActionAt = now;
+      autoDeviceIds.forEach(id => { if (devices[id] && devices[id].state) toggleDevice(id); });
+    }
+  }
+
+  function toggleAutoDevice(id, checked) {
+    if (checked) autoDeviceIds.add(id); else autoDeviceIds.delete(id);
+    saveGeoConfig();
+  }
+
+  // ---------- ส่งออก CSV ----------
+  function exportCsv() {
+    let csv = "Device,Watt,kWh,Cost\n";
+    Object.keys(devices).forEach(id => {
+      const d = devices[id];
+      csv += `${d.name},${d.watt},${(d.kwh || 0).toFixed(4)},${((d.kwh || 0) * rate).toFixed(2)}\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "energy-report.csv";
+    a.click();
+  }
+
+  loadConfig();
+  loadGeoConfig();
+</script>
+</body>
+</html>
