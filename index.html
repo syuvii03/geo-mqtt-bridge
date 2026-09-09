@@ -167,6 +167,16 @@
     <div class="config-hint">ต้องกดยอมรับให้เว็บนี้เข้าถึงตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน • เลือกอุปกรณ์ที่ต้องการรวมในระบบอัตโนมัติได้ที่การ์ดอุปกรณ์ด้านล่าง (เช็คบ็อกซ์ "รวมในระบบอัตโนมัติ") • Geolocation อาจใช้ไม่ได้ถ้าเปิดไฟล์ผ่าน file:// โดยตรงในบางเบราว์เซอร์ ลองรันผ่าน localhost หรือ HTTPS หากอ่านตำแหน่งไม่ได้</div>
   </div>
 
+  <div class="config-panel" id="dbPanel">
+    <label>HISTORY API URL</label>
+    <input id="cfgHistUrl" type="text" placeholder="https://your-project.vercel.app">
+    <label>HISTORY TOKEN</label>
+    <input id="cfgHistToken" type="password" placeholder="••••••••">
+    <button class="btn-connect" onclick="connectHistoryDb()">เชื่อมต่อฐานข้อมูล</button>
+    <div class="config-hint">ใช้ URL โปรเจกต์ Vercel และ Token (TRIGGER_TOKEN) เดียวกับที่ตั้งไว้ในโปรเจกต์ geo-mqtt-bridge เพื่อให้กราฟย้อนหลัง (รายชั่วโมง/รายวัน/สัดส่วนอุปกรณ์) ซิงค์ข้ามเครื่อง/มือถือ และไม่หายตอนล้าง cache เบราว์เซอร์ • ไม่บันทึก Token ไว้ในเครื่อง ต้องกรอกใหม่ทุกครั้งเพื่อความปลอดภัยขั้นต่ำ (เหมือนรหัสผ่าน broker) • ถ้าไม่กรอก ระบบจะยังเก็บกราฟไว้ในเบราว์เซอร์นี้เครื่องเดียวเหมือนเดิม</div>
+    <div style="font-family:monospace; font-size:11px; color:var(--text-dim); margin-top:4px;" id="histSyncStatus"></div>
+  </div>
+
   <div class="cost-summary">
     <div class="cost-item">
       <div class="cost-label">พลังงานรวม (ตั้งแต่บอร์ดล่าสุดรีสตาร์ท)</div>
@@ -334,7 +344,8 @@
       document.getElementById("cfgUser").value = cfg.user || "";
       document.getElementById("cfgPrefix").value = cfg.prefix || "myhome";
       document.getElementById("cfgRate").value = cfg.rate || 4.40;
-      // ไม่บันทึกรหัสผ่านไว้ ให้ผู้ใช้กรอกใหม่ทุกครั้งเพื่อความปลอดภัยขั้นต่ำ
+      document.getElementById("cfgHistUrl").value = cfg.histUrl || "";
+      // ไม่บันทึกรหัสผ่าน/Token ไว้ ให้ผู้ใช้กรอกใหม่ทุกครั้งเพื่อความปลอดภัยขั้นต่ำ
     } catch (e) {}
   }
 
@@ -344,7 +355,8 @@
       port: document.getElementById("cfgPort").value,
       user: document.getElementById("cfgUser").value,
       prefix: document.getElementById("cfgPrefix").value,
-      rate: document.getElementById("cfgRate").value
+      rate: document.getElementById("cfgRate").value,
+      histUrl: document.getElementById("cfgHistUrl").value
     };
     localStorage.setItem("mqtt_dashboard_config", JSON.stringify(cfg));
   }
@@ -823,9 +835,87 @@
     if (!mp.value) mp.value = todayKey().slice(0, 7);
   }
 
-  function saveHistory() {
+  function saveHistoryLocal() {
     try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); }
     catch (e) { console.error("บันทึกประวัติไม่สำเร็จ (พื้นที่เต็ม?):", e); }
+  }
+
+  function saveHistory() {
+    saveHistoryLocal();
+    queueHistorySync(); // ส่งขึ้นฐานข้อมูลด้วย ถ้าเชื่อมต่อไว้ (หน่วงเวลาไม่ให้ยิงถี่เกินไป)
+  }
+
+  // ---------- ซิงค์ประวัติกับฐานข้อมูล (Upstash Redis ผ่าน Vercel Function api/history.js) ----------
+  // ถ้าไม่ได้กรอก History API URL / Token ไว้ ระบบจะทำงานแบบเดิมคือเก็บไว้ใน localStorage ของเบราว์เซอร์นี้เครื่องเดียว
+  let histApiUrl = "";
+  let histApiToken = "";
+  let histSyncTimer = null;
+  let histSyncing = false;
+
+  function setHistSyncStatus(text) {
+    const el = document.getElementById("histSyncStatus");
+    if (el) el.textContent = text;
+  }
+
+  function historyEndpoint() {
+    return `${histApiUrl.replace(/\/$/, '')}/api/history?token=${encodeURIComponent(histApiToken)}`;
+  }
+
+  function connectHistoryDb() {
+    histApiUrl = document.getElementById("cfgHistUrl").value.trim();
+    histApiToken = document.getElementById("cfgHistToken").value.trim();
+    if (!histApiUrl || !histApiToken) {
+      alert("กรุณากรอก History API URL และ Token ให้ครบก่อนเชื่อมต่อฐานข้อมูล");
+      return;
+    }
+    saveConfig(); // เก็บ URL ไว้ (ไม่เก็บ token)
+    fetchHistoryFromServer();
+  }
+
+  async function fetchHistoryFromServer() {
+    if (!histApiUrl || !histApiToken) return;
+    try {
+      setHistSyncStatus("กำลังโหลดกราฟจากฐานข้อมูล...");
+      const r = await fetch(historyEndpoint());
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const serverHist = await r.json();
+      hist = Object.assign({ hourly: {}, daily: {}, deviceDaily: {}, budget: null }, serverHist);
+      saveHistoryLocal(); // เก็บสำเนาไว้ในเครื่องด้วย เผื่อใช้งานตอนออฟไลน์/ยังไม่ได้เชื่อมต่อฐานข้อมูล
+      if (hist.budget !== null && hist.budget !== undefined) {
+        document.getElementById("budgetInput").value = hist.budget;
+      }
+      renderTodayBars(); renderMonthBars(); renderDeviceDonut(); renderRankings(); updateEnergyAdvice();
+      setHistSyncStatus("ซิงค์ล่าสุด: " + new Date().toLocaleTimeString('th-TH'));
+    } catch (e) {
+      console.error("โหลดประวัติจากฐานข้อมูลไม่สำเร็จ:", e);
+      setHistSyncStatus("โหลดจากฐานข้อมูลไม่สำเร็จ (ใช้ข้อมูลในเครื่องแทน)");
+    }
+  }
+
+  function queueHistorySync() {
+    if (!histApiUrl || !histApiToken) return;
+    clearTimeout(histSyncTimer);
+    histSyncTimer = setTimeout(pushHistoryToServer, 3000); // หน่วงไว้กันยิงถี่เกินไปตอนข้อมูลเข้ารัวๆ
+  }
+
+  async function pushHistoryToServer() {
+    if (!histApiUrl || !histApiToken || histSyncing) return;
+    histSyncing = true;
+    try {
+      setHistSyncStatus("กำลังบันทึกลงฐานข้อมูล...");
+      const r = await fetch(historyEndpoint(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hist)
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setHistSyncStatus("ซิงค์ล่าสุด: " + new Date().toLocaleTimeString('th-TH'));
+    } catch (e) {
+      console.error("บันทึกประวัติลงฐานข้อมูลไม่สำเร็จ:", e);
+      setHistSyncStatus("บันทึกลงฐานข้อมูลไม่สำเร็จ (ลองใหม่รอบหน้า)");
+    } finally {
+      histSyncing = false;
+    }
   }
 
   // คำนวณส่วนต่างพลังงาน (kWh) ของแต่ละอุปกรณ์ตั้งแต่ telemetry รอบก่อนหน้า แล้วสะสมเข้าตะกร้ารายชั่วโมง/รายวัน
