@@ -23,10 +23,12 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
-  const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Vercel Marketplace (Upstash) เติมชื่อตัวแปรเป็น KV_REST_API_URL / KV_REST_API_TOKEN
+  // เผื่อกรณีตั้งเองผ่าน upstash.com โดยตรง ก็รองรับชื่อ UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN ด้วย
+  const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!REDIS_URL || !REDIS_TOKEN) {
-    res.status(500).json({ error: 'UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN ยังไม่ได้ตั้งค่าใน Environment Variables' });
+    res.status(500).json({ error: 'KV_REST_API_URL / KV_REST_API_TOKEN (หรือ UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN) ยังไม่ได้ตั้งค่าใน Environment Variables' });
     return;
   }
 
