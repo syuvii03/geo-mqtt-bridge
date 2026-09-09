@@ -83,6 +83,41 @@
   .util-btn { background: transparent; border: 1px dashed var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 11px; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
   .util-btn:hover { border-color: var(--on-color); color: var(--on-color); }
 
+  .history-card { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+  .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .history-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .history-tab { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 11px; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+  .history-tab.active { background: var(--on-color); color: var(--bg); font-weight: 600; }
+
+  .period-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .period-card { background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 11px; }
+
+  .month-config-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; font-family: monospace; font-size: 12px; flex-wrap: wrap; }
+  .month-config-row input { background: var(--panel-alt); border: 1px solid var(--border-light); color: #fff; padding: 4px 8px; border-radius: 4px; }
+
+  .budget-bar-wrap { margin: 12px 0 4px; }
+  .budget-bar-track { height: 10px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 5px; overflow: hidden; }
+  .budget-bar-fill { height: 100%; background: var(--on-color); transition: width 0.4s ease, background 0.4s ease; }
+  .budget-bar-fill.warn { background: var(--warn-color); }
+  .budget-bar-label { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-top: 6px; }
+
+  .donut-wrap { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .donut-legend-row { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; margin-bottom: 8px; }
+  .donut-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  .rank-item { margin-bottom: 12px; font-family: monospace; font-size: 12px; }
+  .rank-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .rank-bar-bg { width: 100%; height: 8px; background: var(--panel-alt); border-radius: 4px; overflow: hidden; }
+  .rank-bar-fill { height: 100%; background: var(--on-color); border-radius: 4px; }
+
+  .bar-chart-svg { width: 100%; height: 160px; margin-top: 12px; }
+  rect.bar { fill: var(--on-color); opacity: 0.7; rx: 3px; }
+  rect.bar.peak { fill: var(--warn-color) !important; opacity: 1 !important; }
+
+  .advice-box { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 13px; line-height: 1.6; }
+  .advice-eyebrow { font-family: monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; }
+  .advice-text { color: var(--on-color); transition: color 0.3s ease; }
+
   footer { margin-top: 24px; font-family: monospace; font-size: 11px; color: var(--text-dim); line-height: 1.6; }
   footer code { background: var(--panel); padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); }
 </style>
@@ -124,7 +159,7 @@
     <input id="geoLng" type="text" placeholder="100.501800" style="max-width:120px;" onchange="onGeoLatLngChange()">
     <button class="btn-connect" onclick="useCurrentLocationAsBoard()">📍 ใช้ตำแหน่งปัจจุบันเป็นตำแหน่งบอร์ด</button>
     <label>ระยะเปิดอัตโนมัติ (เมตร)</label>
-    <input id="geoThreshold" type="number" value="1" min="1" style="max-width:80px;" onchange="onGeoThresholdChange()">
+    <input id="geoThreshold" type="number" value="25" min="1" style="max-width:80px;" onchange="onGeoThresholdChange()">
     <label class="geo-check-label">
       <input id="geoEnabled" type="checkbox" onchange="onGeoEnabledChange()">
       เปิดใช้งานเปิด/ปิดอัตโนมัติตามระยะ
@@ -179,6 +214,69 @@
     <div class="chart-legend" id="chartLegend"></div>
   </div>
 
+  <div class="history-card">
+    <div class="history-head">
+      <div style="font-weight:600; font-size:14px;">ประวัติการใช้ไฟ</div>
+      <div class="history-tabs">
+        <button class="history-tab active" id="tabToday" onclick="switchHistTab('today')">วันนี้</button>
+        <button class="history-tab" id="tabMonth" onclick="switchHistTab('month')">รายเดือน</button>
+        <button class="history-tab" onclick="exportHistoryCsv()">⬇ CSV</button>
+      </div>
+    </div>
+
+    <!-- แท็บ วันนี้ -->
+    <div id="todayView">
+      <div style="font-family:monospace; font-size:11px; color:var(--warn-color); margin-bottom:4px;" id="peakText">ช่วงพีคของวันนี้: -</div>
+      <div style="font-family:monospace; font-size:12px; color:var(--text-secondary);" id="todayTotalText">รวมวันนี้: 0.000 kWh · ฿0.00</div>
+
+      <div class="period-cards">
+        <div class="period-card">เช้า (06-12)<br><span id="p1" style="color:var(--on-color);">0.000 kWh</span></div>
+        <div class="period-card">บ่าย-เย็น (12-18)<br><span id="p2" style="color:var(--on-color);">0.000 kWh</span></div>
+        <div class="period-card">ค่ำ (18-22)<br><span id="p3" style="color:var(--on-color);">0.000 kWh</span></div>
+        <div class="period-card">กลางคืน (22-06)<br><span id="p4" style="color:var(--on-color);">0.000 kWh</span></div>
+      </div>
+
+      <div style="font-family:monospace; font-size:12px; font-weight:600; margin: 16px 0 8px;">การใช้ไฟรายชั่วโมง (วันนี้)</div>
+      <div class="bar-chart-svg"><svg viewBox="0 0 500 150" id="todayBarSvg"></svg></div>
+
+      <div style="font-family:monospace; font-size:12px; font-weight:600; margin: 20px 0 10px;">สัดส่วนการใช้ไฟแต่ละอุปกรณ์ (วันนี้)</div>
+      <div class="donut-wrap">
+        <div id="deviceDonut"></div>
+        <div id="donutLegend" style="flex:1; min-width:150px;"></div>
+      </div>
+
+      <div style="font-family:monospace; font-size:12px; font-weight:600; margin: 20px 0 10px;">อันดับอุปกรณ์กินไฟสูงสุด (วันนี้)</div>
+      <div id="rankList"></div>
+    </div>
+
+    <!-- แท็บ รายเดือน -->
+    <div id="monthView" style="display:none;">
+      <div class="month-config-row">
+        <span>เดือน</span>
+        <input type="month" id="monthPicker" onchange="renderMonthBars()">
+        <span>งบ/เดือน (บาท)</span>
+        <input type="number" id="budgetInput" placeholder="เช่น 2000" oninput="onBudgetChange()" style="width:100px;">
+      </div>
+
+      <div style="font-family:monospace; font-size:12px; line-height:1.6;">
+        <div>รวมเดือนนี้: <b id="mKwh">0.00</b> kWh · <b id="mCost">฿0.00</b></div>
+        <div style="color:var(--text-secondary);">พยากรณ์ค่าไฟสิ้นเดือน: ประมาณ <b id="forecastVal">฿0.00</b></div>
+      </div>
+
+      <div class="budget-bar-wrap" id="budgetWrap" style="display:none;">
+        <div class="budget-bar-track"><div class="budget-bar-fill" id="budgetFill" style="width:0%;"></div></div>
+        <div class="budget-bar-label" id="budgetLabel">0.00 / 0.00 บาท (0%)</div>
+      </div>
+
+      <div class="bar-chart-svg"><svg viewBox="0 0 500 150" id="monthBarSvg"></svg></div>
+    </div>
+
+    <div class="advice-box">
+      <div class="advice-eyebrow">แนวทางประหยัดไฟ</div>
+      <div id="adviceText" class="advice-text">→ กำลังวิเคราะห์ข้อมูลการใช้งาน...</div>
+    </div>
+  </div>
+
   <div class="rack-label">อุปกรณ์</div>
   <div class="breaker-grid" id="breakerGrid">
     <div style="font-family:monospace; font-size:12px; color:var(--text-dim);">กรอกข้อมูล broker ด้านบนแล้วกด "เชื่อมต่อ" เพื่อแสดงอุปกรณ์</div>
@@ -211,7 +309,7 @@
   let historyData = {}; // สำหรับกราฟเรียลไทม์ (เก็บย้อนหลัง 30 จุด ต่ออุปกรณ์)
 
   // ---------- ระบบเปิด/ปิดอัตโนมัติตามระยะห่าง (Geofencing) ----------
-  let geoLat = null, geoLng = null, geoThreshold = 1, geoEnabled = false;
+  let geoLat = null, geoLng = null, geoThreshold = 25, geoEnabled = false; // แก้จาก 1 เมตร เป็น 25 เมตร เพราะ GPS มือถือทั่วไปคลาดเคลื่อน 5-20 ม.
   let geoWatchId = null;
   let autoDeviceIds = new Set(); // อุปกรณ์ที่เลือกให้เข้าระบบอัตโนมัติ
   let insideZone = null;         // null = ยังไม่รู้สถานะ, true/false = อยู่ในระยะ/นอกระยะล่าสุด
@@ -344,6 +442,7 @@
         renderBreakers();
         renderCostSummary(data.totalKwh || 0);
         updateChartHistory();
+        recordHistoryDelta(); // บันทึกส่วนต่างพลังงานลง localStorage สำหรับกราฟรายวัน/รายเดือน
       } catch (e) {
         console.error("แปลง telemetry JSON ไม่สำเร็จ:", e);
       }
@@ -494,7 +593,7 @@
         const cfg = JSON.parse(saved);
         geoLat = (cfg.lat === null || cfg.lat === undefined) ? null : cfg.lat;
         geoLng = (cfg.lng === null || cfg.lng === undefined) ? null : cfg.lng;
-        geoThreshold = cfg.threshold || 1;
+        geoThreshold = cfg.threshold || 25;
         geoEnabled = !!cfg.enabled;
         autoDeviceIds = new Set(cfg.autoDeviceIds || []);
       } catch (e) {}
@@ -545,7 +644,7 @@
   }
 
   function onGeoThresholdChange() {
-    geoThreshold = parseFloat(document.getElementById("geoThreshold").value) || 1;
+    geoThreshold = parseFloat(document.getElementById("geoThreshold").value) || 25;
     insideZone = null; // เกณฑ์เปลี่ยน ให้ประเมินสถานะใหม่รอบถัดไป
     distanceBuffer = [];
     pendingSide = null;
@@ -696,8 +795,346 @@
     a.click();
   }
 
+  // ================== ระบบเก็บประวัติการใช้ไฟ (localStorage) ==================
+  // หมายเหตุสำคัญ: ระบบนี้เก็บข้อมูลได้เฉพาะช่วงที่ "เปิดหน้าเว็บนี้ค้างไว้และเชื่อมต่อ MQTT อยู่" เท่านั้น
+  // ถ้าปิดแท็บ/ปิดเบราว์เซอร์ พลังงานที่ใช้ไปในช่วงนั้นจะไม่ถูกบันทึก (ไม่มีเซิร์ฟเวอร์กลางคอยเก็บให้ตลอดเวลา)
+  const HIST_KEY = "energy_history_v1";
+  let lastDeviceKwh = {}; // ค่า kwh สะสมล่าสุดที่เคยเห็นของแต่ละอุปกรณ์ (ไว้คำนวณส่วนต่าง)
+  let hist = { hourly: {}, daily: {}, deviceDaily: {}, budget: null };
+
+  function todayKey(d = new Date()) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function loadHistory() {
+    try {
+      const saved = localStorage.getItem(HIST_KEY);
+      if (saved) hist = Object.assign({ hourly: {}, daily: {}, deviceDaily: {}, budget: null }, JSON.parse(saved));
+    } catch (e) { console.error("โหลดประวัติไม่สำเร็จ:", e); }
+
+    // จำกัดขนาด: เก็บ hourly ย้อนหลังไม่เกิน 35 วัน กัน localStorage บวมเกินไป
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 35);
+    Object.keys(hist.hourly).forEach(k => { if (new Date(k) < cutoff) delete hist.hourly[k]; });
+
+    if (hist.budget !== null && hist.budget !== undefined) {
+      document.getElementById("budgetInput").value = hist.budget;
+    }
+    const mp = document.getElementById("monthPicker");
+    if (!mp.value) mp.value = todayKey().slice(0, 7);
+  }
+
+  function saveHistory() {
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); }
+    catch (e) { console.error("บันทึกประวัติไม่สำเร็จ (พื้นที่เต็ม?):", e); }
+  }
+
+  // คำนวณส่วนต่างพลังงาน (kWh) ของแต่ละอุปกรณ์ตั้งแต่ telemetry รอบก่อนหน้า แล้วสะสมเข้าตะกร้ารายชั่วโมง/รายวัน
+  function recordHistoryDelta() {
+    const now = new Date();
+    const dKey = todayKey(now);
+    const hour = now.getHours();
+
+    if (!hist.hourly[dKey]) hist.hourly[dKey] = new Array(24).fill(0);
+    if (!hist.deviceDaily[dKey]) hist.deviceDaily[dKey] = {};
+
+    let totalDelta = 0;
+    Object.keys(devices).forEach(id => {
+      const currentKwh = devices[id].kwh || 0;
+      const prevKwh = lastDeviceKwh[id];
+      let delta = 0;
+      if (prevKwh !== undefined && currentKwh >= prevKwh) {
+        delta = currentKwh - prevKwh; // กรณีปกติ
+      }
+      // ถ้า currentKwh < prevKwh แปลว่า ESP32 เพิ่งรีสตาร์ท (ค่าสะสมรีเซ็ต) ให้ข้ามรอบนี้ไป ไม่ลบเป็นค่าติดลบ
+      lastDeviceKwh[id] = currentKwh;
+
+      if (delta > 0) {
+        totalDelta += delta;
+        hist.deviceDaily[dKey][id] = (hist.deviceDaily[dKey][id] || 0) + delta;
+      }
+    });
+
+    if (totalDelta > 0) {
+      hist.hourly[dKey][hour] += totalDelta;
+      hist.daily[dKey] = (hist.daily[dKey] || 0) + totalDelta;
+      saveHistory();
+      renderTodayBars();
+      renderMonthBars();
+      renderDeviceDonut();
+      renderRankings();
+      updateBudget();
+      updateEnergyAdvice();
+    }
+  }
+
+  // ---------- สลับแท็บ วันนี้ / รายเดือน ----------
+  function switchHistTab(t) {
+    document.getElementById("tabToday").classList.toggle("active", t === 'today');
+    document.getElementById("tabMonth").classList.toggle("active", t === 'month');
+    document.getElementById("todayView").style.display = t === 'today' ? 'block' : 'none';
+    document.getElementById("monthView").style.display = t === 'month' ? 'block' : 'none';
+  }
+
+  function onBudgetChange() {
+    hist.budget = parseFloat(document.getElementById("budgetInput").value) || null;
+    saveHistory();
+    updateBudget();
+    updateEnergyAdvice();
+  }
+
+  // ---------- กราฟแท่งรายชั่วโมงของวันนี้ ----------
+  function renderTodayBars() {
+    const svg = document.getElementById("todayBarSvg");
+    svg.innerHTML = "";
+    const dKey = todayKey();
+    const hoursData = hist.hourly[dKey] || new Array(24).fill(0);
+    const maxVal = Math.max(...hoursData, 0.1);
+
+    let p1=0,p2=0,p3=0,p4=0;
+    hoursData.forEach((v,h) => {
+      if (h>=6 && h<12) p1+=v; else if (h>=12 && h<18) p2+=v; else if (h>=18 && h<22) p3+=v; else p4+=v;
+    });
+    document.getElementById("p1").textContent = p1.toFixed(3)+" kWh";
+    document.getElementById("p2").textContent = p2.toFixed(3)+" kWh";
+    document.getElementById("p3").textContent = p3.toFixed(3)+" kWh";
+    document.getElementById("p4").textContent = p4.toFixed(3)+" kWh";
+
+    const totalToday = hoursData.reduce((a,b)=>a+b,0);
+    document.getElementById("todayTotalText").textContent = `รวมวันนี้: ${totalToday.toFixed(3)} kWh · ฿${(totalToday*rate).toFixed(2)}`;
+
+    let peakHour=0, maxPeak=0;
+    hoursData.forEach((v,h) => { if (v>maxPeak) { maxPeak=v; peakHour=h; } });
+    document.getElementById("peakText").textContent = maxPeak > 0
+      ? `ช่วงพีคของวันนี้: ${String(peakHour).padStart(2,'0')}:00-${String((peakHour+1)%24).padStart(2,'0')}:00 (${maxPeak.toFixed(3)} kWh)`
+      : `ช่วงพีคของวันนี้: -`;
+
+    hoursData.forEach((val,i) => {
+      const x = i*20+8;
+      const height = (val/maxVal)*110;
+      const y = 130-height;
+      const isPeak = val === maxPeak && val > 0;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x",x); rect.setAttribute("y",y); rect.setAttribute("width",14); rect.setAttribute("height",height);
+      rect.setAttribute("class", isPeak ? "bar peak" : "bar");
+      svg.appendChild(rect);
+      if (i%2===0) {
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x",x-2); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill","#8B94A0");
+        text.textContent = String(i).padStart(2,'0');
+        svg.appendChild(text);
+      }
+    });
+  }
+
+  // ---------- กราฟแท่งรายวันของเดือนที่เลือก ----------
+  function renderMonthBars() {
+    const svg = document.getElementById("monthBarSvg");
+    svg.innerHTML = "";
+    const monthStr = document.getElementById("monthPicker").value || todayKey().slice(0,7);
+    const [y, m] = monthStr.split('-').map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+
+    const days = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      days.push(hist.daily[key] || 0);
+    }
+    const maxVal = Math.max(...days, 0.1);
+    let maxPeak = 0; days.forEach(v => { if (v>maxPeak) maxPeak = v; });
+
+    const sumKwh = days.reduce((a,b)=>a+b,0);
+    document.getElementById("mKwh").textContent = sumKwh.toFixed(2);
+    document.getElementById("mCost").textContent = "฿"+(sumKwh*rate).toFixed(2);
+
+    // พยากรณ์: ใช้ค่าเฉลี่ยต่อวัน "เท่าที่มีข้อมูลจริง" คูณจำนวนวันทั้งเดือน
+    const daysWithData = days.filter(v => v > 0).length || 1;
+    const forecastCost = ((sumKwh / daysWithData) * daysInMonth) * rate;
+    document.getElementById("forecastVal").textContent = "฿"+forecastCost.toFixed(2);
+
+    const budgetVal = hist.budget;
+    const budgetWrap = document.getElementById("budgetWrap");
+    if (budgetVal > 0) {
+      budgetWrap.style.display = "block";
+      const pct = Math.min(100, (forecastCost/budgetVal)*100);
+      const fill = document.getElementById("budgetFill");
+      fill.style.width = pct.toFixed(1)+"%";
+      fill.classList.toggle("warn", pct >= 80);
+      document.getElementById("budgetLabel").textContent = `${forecastCost.toFixed(2)} / ${budgetVal.toFixed(2)} บาท (${pct.toFixed(0)}%)`;
+    } else {
+      budgetWrap.style.display = "none";
+    }
+
+    days.forEach((val,i) => {
+      const x = i*(490/daysInMonth)+5;
+      const width = Math.max(3, (490/daysInMonth)-3);
+      const height = (val/maxVal)*120;
+      const yPos = 130-height;
+      const isPeak = val === maxPeak && val > 0;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x",x); rect.setAttribute("y",yPos); rect.setAttribute("width",width); rect.setAttribute("height",height);
+      rect.setAttribute("class", isPeak ? "bar peak" : "bar");
+      svg.appendChild(rect);
+      if (daysInMonth <= 31 && (i+1) % (daysInMonth > 20 ? 3 : 2) === 0) {
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x",x); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill","#8B94A0");
+        text.textContent = String(i+1).padStart(2,'0');
+        svg.appendChild(text);
+      }
+    });
+  }
+
+  function updateBudget() { renderMonthBars(); } // ใช้ฟังก์ชันเดียวกัน เพราะงบผูกอยู่กับกราฟเดือน
+
+  // ---------- Donut สัดส่วนอุปกรณ์ของวันนี้ ----------
+  function renderDeviceDonut() {
+    const box = document.getElementById("deviceDonut");
+    const legend = document.getElementById("donutLegend");
+    box.innerHTML = "";
+    const dKey = todayKey();
+    const raw = hist.deviceDaily[dKey] || {};
+    const ids = Object.keys(devices);
+    const items = ids.map((id,i) => ({ name: devices[id].name, kwh: raw[id] || 0, color: COLORS[i % COLORS.length] }));
+    const total = items.reduce((a,b)=>a+b.kwh,0);
+
+    const size=160, radius=60, stroke=24, cx=size/2, cy=size/2;
+    const circumference = 2*Math.PI*radius;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS,"svg");
+    svg.setAttribute("viewBox",`0 0 ${size} ${size}`); svg.setAttribute("width",size); svg.setAttribute("height",size);
+
+    const bg = document.createElementNS(svgNS,"circle");
+    bg.setAttribute("cx",cx); bg.setAttribute("cy",cy); bg.setAttribute("r",radius);
+    bg.setAttribute("fill","none"); bg.setAttribute("stroke","var(--panel-alt)"); bg.setAttribute("stroke-width",stroke);
+    svg.appendChild(bg);
+
+    let offset = 0;
+    if (total > 0) {
+      items.forEach(item => {
+        const len = (item.kwh/total)*circumference;
+        const arc = document.createElementNS(svgNS,"circle");
+        arc.setAttribute("cx",cx); arc.setAttribute("cy",cy); arc.setAttribute("r",radius);
+        arc.setAttribute("fill","none"); arc.setAttribute("stroke",item.color); arc.setAttribute("stroke-width",stroke);
+        arc.setAttribute("stroke-dasharray", `${len} ${circumference-len}`);
+        arc.setAttribute("stroke-dashoffset", -offset);
+        arc.setAttribute("transform", `rotate(-90 ${cx} ${cy})`);
+        svg.appendChild(arc);
+        offset += len;
+      });
+    }
+    const centerVal = document.createElementNS(svgNS,"text");
+    centerVal.setAttribute("x",cx); centerVal.setAttribute("y",cy-4); centerVal.setAttribute("text-anchor","middle");
+    centerVal.setAttribute("font-size","14"); centerVal.setAttribute("font-family","monospace"); centerVal.setAttribute("fill","#EDEFF2"); centerVal.setAttribute("font-weight","600");
+    centerVal.textContent = total.toFixed(2);
+    svg.appendChild(centerVal);
+    const centerLabel = document.createElementNS(svgNS,"text");
+    centerLabel.setAttribute("x",cx); centerLabel.setAttribute("y",cy+12); centerLabel.setAttribute("text-anchor","middle");
+    centerLabel.setAttribute("font-size","9"); centerLabel.setAttribute("font-family","monospace"); centerLabel.setAttribute("fill","#8B94A0");
+    centerLabel.textContent = "kWh วันนี้";
+    svg.appendChild(centerLabel);
+    box.appendChild(svg);
+
+    legend.innerHTML = items.map(item => {
+      const pct = total > 0 ? ((item.kwh/total)*100).toFixed(0) : 0;
+      return `<div class="donut-legend-row"><span class="donut-legend-dot" style="background:${item.color};"></span><span style="flex:1;">${item.name}</span><span style="color:var(--text-secondary);">${item.kwh.toFixed(3)} kWh (${pct}%)</span></div>`;
+    }).join("");
+  }
+
+  // ---------- อันดับอุปกรณ์กินไฟสูงสุด (วันนี้) ----------
+  function renderRankings() {
+    const list = document.getElementById("rankList");
+    const dKey = todayKey();
+    const raw = hist.deviceDaily[dKey] || {};
+    const ids = Object.keys(devices);
+    const items = ids.map((id,i) => ({ name: devices[id].name, kwh: raw[id] || 0, color: COLORS[i % COLORS.length] }));
+    const maxKwh = Math.max(...items.map(d=>d.kwh), 0.0001);
+    list.innerHTML = items.map(item => `
+      <div class="rank-item">
+        <div class="rank-header"><span>${item.name}</span><span>${item.kwh.toFixed(3)} kWh</span></div>
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${Math.min(100,(item.kwh/maxKwh)*100)}%; background:${item.color};"></div></div>
+      </div>
+    `).join("");
+  }
+
+  // ---------- ผู้ช่วยแนะนำประหยัดไฟ (วิเคราะห์จากข้อมูลที่เก็บได้) ----------
+  function updateEnergyAdvice() {
+    const adviceBox = document.getElementById("adviceText");
+    const dKey = todayKey();
+    const hoursData = hist.hourly[dKey] || new Array(24).fill(0);
+    const totalToday = hoursData.reduce((a,b)=>a+b,0);
+
+    if (totalToday < 0.005) {
+      adviceBox.style.color = "var(--on-color)";
+      adviceBox.textContent = "→ ระบบกำลังเก็บข้อมูลตามจริง เมื่อเปิดใช้งานอุปกรณ์ ระบบจะวิเคราะห์แนวทางประหยัดไฟให้ทันที";
+      return;
+    }
+
+    // เช็คงบประมาณก่อนเป็นอันดับแรก (สำคัญสุด)
+    const monthStr = todayKey().slice(0,7);
+    const [y,m] = monthStr.split('-').map(Number);
+    const daysInMonth = new Date(y,m,0).getDate();
+    let sumMonth = 0, daysWithData = 0;
+    for (let d=1; d<=daysInMonth; d++) {
+      const key = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const v = hist.daily[key] || 0;
+      sumMonth += v; if (v>0) daysWithData++;
+    }
+    const forecastCost = daysWithData > 0 ? ((sumMonth/daysWithData)*daysInMonth)*rate : 0;
+    if (hist.budget > 0 && forecastCost >= hist.budget * 0.8) {
+      adviceBox.style.color = "var(--warn-color)";
+      adviceBox.textContent = "→ ⚠️ พยากรณ์ค่าไฟเดือนนี้ใกล้เกินงบประมาณที่ตั้งไว้! แนะนำลดเวลาการเปิดเครื่องใช้ไฟฟ้ากำลังไฟสูงลง 1-2 ชั่วโมงต่อวันเพื่อคุมงบ";
+      return;
+    }
+
+    // เช็คว่ามีอุปกรณ์ตัวไหนกินไฟเกินสัดส่วนปกติ (>60% ของวันนี้)
+    const deviceRaw = hist.deviceDaily[dKey] || {};
+    let topId = null, topKwh = 0;
+    Object.keys(deviceRaw).forEach(id => { if (deviceRaw[id] > topKwh) { topKwh = deviceRaw[id]; topId = id; } });
+    if (topId && (topKwh / totalToday) > 0.6) {
+      const name = devices[topId] ? devices[topId].name : topId;
+      adviceBox.style.color = "var(--warn-color)";
+      adviceBox.textContent = `→ "${name}" เป็นอุปกรณ์ที่กินไฟสูงสุดในวันนี้ (${(topKwh/totalToday*100).toFixed(0)}% ของทั้งหมด) แนะนำตรวจสอบการตั้งค่าหรือระยะเวลาใช้งานของอุปกรณ์นี้เป็นพิเศษ`;
+      return;
+    }
+
+    let p2 = hoursData.slice(12,18).reduce((a,b)=>a+b,0);
+    if (p2 > totalToday*0.4) {
+      adviceBox.style.color = "var(--on-color)";
+      adviceBox.textContent = "→ พบการใช้ไฟฟ้าสูงในช่วงบ่าย-เย็น (12:00-18:00) แนะนำหลีกเลี่ยงการเปิดเครื่องใช้ไฟฟ้ากำลังไฟสูงพร้อมกันเพื่อลด Peak Load";
+      return;
+    }
+
+    let p4 = hoursData.slice(22,24).concat(hoursData.slice(0,6)).reduce((a,b)=>a+b,0);
+    if (p4 > totalToday*0.35) {
+      adviceBox.style.color = "var(--on-color)";
+      adviceBox.textContent = "→ พบการใช้ไฟในช่วงกลางคืนค่อนข้างสูง ตรวจสอบว่ามีอุปกรณ์ที่ไม่ได้ใช้งานเปิดทิ้งไว้โดยไม่จำเป็นหรือไม่";
+      return;
+    }
+
+    adviceBox.style.color = "var(--on-color)";
+    adviceBox.textContent = "→ การใช้พลังงานอยู่ในเกณฑ์ปกติ ลองถอดปลั๊กอุปกรณ์ที่ไม่ใช้งานเพื่อลดการกินไฟแบบ Standby Power";
+  }
+
+  // ---------- ส่งออกประวัติทั้งหมดเป็น CSV ----------
+  function exportHistoryCsv() {
+    let csv = "Date,Hour,kWh\n";
+    Object.keys(hist.hourly).sort().forEach(dKey => {
+      hist.hourly[dKey].forEach((v,h) => { if (v>0) csv += `${dKey},${h}:00,${v.toFixed(4)}\n`; });
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "energy-history.csv";
+    a.click();
+  }
+
   loadConfig();
   loadGeoConfig();
+  loadHistory();
+  renderTodayBars();
+  renderMonthBars();
+  renderDeviceDonut();
+  renderRankings();
+  updateEnergyAdvice();
 </script>
 </body>
 </html>
