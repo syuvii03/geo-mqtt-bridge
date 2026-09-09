@@ -22,35 +22,10 @@
    | MQTT_PREFIX    | myhome                                     |
    | DEVICE_IDS     | aircon,light,fan                           |
    | TRIGGER_TOKEN  | (ตั้งรหัสลับยาวๆ เดาไม่ได้ เช่น สุ่มจาก https://randomkeygen.com) |
-   | UPSTASH_REDIS_REST_URL   | (จากขั้นตอนตั้งฐานข้อมูลด้านล่าง) |
-   | UPSTASH_REDIS_REST_TOKEN | (จากขั้นตอนตั้งฐานข้อมูลด้านล่าง) |
 
 6. กด Save แล้วไปที่แท็บ Deployments กด "Redeploy" อีกครั้งให้ค่า Environment Variables มีผล
 7. จะได้ URL ของฟังก์ชันเป็น:
    `https://<ชื่อโปรเจกต์ของคุณ>.vercel.app/api/geo-trigger`
-
-## ตั้งฐานข้อมูลเก็บกราฟ (`api/history.js`)
-
-ปกติกราฟการใช้ไฟ (รายชั่วโมง/รายวัน/สัดส่วนอุปกรณ์) ในหน้าเว็บจะถูกเก็บไว้ใน `localStorage` ของเบราว์เซอร์เครื่องเดียวเท่านั้น — ถ้าล้าง cache หรือเปิดจากเครื่องอื่นข้อมูลจะหายไป/ไม่ตรงกัน ไฟล์ `api/history.js` ที่เพิ่มเข้ามาช่วยแก้ตรงนี้ โดยเก็บกราฟไว้ในฐานข้อมูล Upstash Redis (ฟรี ผ่าน Vercel Marketplace)
-
-1. เข้าโปรเจกต์บน Vercel → แท็บ **Storage** → **Marketplace Database Storage** → เลือก **Upstash** → สร้างฐานข้อมูล Redis (เลือกแผนฟรี) → กด Connect เข้ากับโปรเจกต์นี้ (ขั้นตอนนี้ Vercel จะเติมค่า `UPSTASH_REDIS_REST_URL` และ `UPSTASH_REDIS_REST_TOKEN` ให้อัตโนมัติในหน้า Environment Variables)
-   - ทางเลือก: สมัครที่ https://upstash.com เอง แล้วคัดลอกค่า REST URL / REST Token มาใส่ในหน้า Environment Variables ของ Vercel ด้วยตัวเองก็ได้เช่นกัน
-2. ไปที่แท็บ Deployments กด "Redeploy" อีกครั้งให้ค่า Environment Variables มีผล
-3. เปิดหน้าเว็บ `index.html` เลื่อนไปที่กล่อง **HISTORY API URL / HISTORY TOKEN** กรอก:
-   - HISTORY API URL: `https://<ชื่อโปรเจกต์ของคุณ>.vercel.app`
-   - HISTORY TOKEN: ใช้ค่าเดียวกับ `TRIGGER_TOKEN`
-   
-   แล้วกด "เชื่อมต่อฐานข้อมูล" — กราฟจะโหลดจากฐานข้อมูลแทน และทุกครั้งที่มีข้อมูลใหม่เข้ามาจะถูกบันทึกขึ้นฐานข้อมูลด้วย (หน่วงเวลาประมาณ 3 วินาทีกันยิงถี่)
-   - ไม่กรอกก็ได้ ถ้าอยากใช้แบบเดิมคือเก็บไว้ในเบราว์เซอร์เครื่องเดียว
-   - Token จะไม่ถูกจำไว้ในเครื่อง ต้องกรอกใหม่ทุกครั้งที่เปิดหน้าเว็บ เพื่อความปลอดภัยขั้นต่ำ (เหมือนรหัสผ่าน broker)
-
-ทดสอบ endpoint ตรงๆ ได้ (ใส่ token ให้ตรงกับที่ตั้งไว้):
-
-```
-https://<โปรเจกต์>.vercel.app/api/history?token=รหัสลับของคุณ
-```
-
-ถ้าสำเร็จจะเห็น JSON โครงสร้าง `{"hourly":{},"daily":{},"deviceDaily":{},"budget":null}` (หรือมีข้อมูลจริงถ้าเคยซิงค์จากหน้าเว็บแล้ว)
 
 ## ทดสอบก่อนต่อ IFTTT
 
