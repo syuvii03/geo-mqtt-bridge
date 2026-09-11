@@ -6,10 +6,19 @@
 <title>แผงควบคุมไฟฟ้า (MQTT)</title>
 <style>
   :root {
+    --bg: #F6F7F9; --panel: #FFFFFF; --panel-alt: #EEF1F4; --panel-raised: #FFFFFF;
+    --on-color: #0D9488; --on-glow: rgba(13, 148, 136, 0.25); --off-color: #9CA3AF;
+    --warn-color: #EA580C; --danger-color: #DC2626; --danger-glow: rgba(220, 38, 38, 0.35);
+    --text-primary: #1F2933; --text-secondary: #5B6472;
+    --text-dim: #9AA3AF; --border: #E3E6EB; --border-light: #D3D8DF; --thumb-off: #6B7280;
+  }
+  /* ธีมมืด: สลับได้จากปุ่มที่มุมขวาบน ค่าที่จำไว้เก็บใน localStorage */
+  body.theme-dark {
     --bg: #0B0E11; --panel: #151A20; --panel-alt: #1B2229; --panel-raised: #1F2730;
     --on-color: #5EEAD4; --on-glow: rgba(94, 234, 212, 0.45); --off-color: #4B5563;
-    --warn-color: #FF8A5B; --text-primary: #EDEFF2; --text-secondary: #8B94A0;
-    --text-dim: #565F6B; --border: #242C35; --border-light: #313B47;
+    --warn-color: #FF8A5B; --danger-color: #F87171; --danger-glow: rgba(248, 113, 113, 0.4);
+    --text-primary: #EDEFF2; --text-secondary: #8B94A0;
+    --text-dim: #565F6B; --border: #242C35; --border-light: #313B47; --thumb-off: #6B7280;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -62,7 +71,7 @@
   .rack-label { font-family: monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; margin: 12px 0 8px; }
   .breaker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-bottom: 20px; }
   .breaker { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: border-color 0.25s; }
-  .breaker.is-on { border-color: rgba(94,234,212,0.4); }
+  .breaker.is-on { border-color: rgba(13,148,136,0.4); }
   .breaker-top { display: flex; justify-content: space-between; margin-bottom: 14px; }
   .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); }
   .breaker-name { font-size: 16px; font-weight: 600; }
@@ -74,8 +83,8 @@
   .breaker.is-on .status-text { color: var(--on-color); }
   .switch-track { width: 44px; height: 72px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 4px; cursor: pointer; }
   .switch-track.disabled { cursor: not-allowed; opacity: 0.5; }
-  .switch-thumb { width: 34px; height: 32px; background: #3B4048; border-radius: 6px; transition: transform 0.2s ease; }
-  .switch-track.on .switch-thumb { transform: translateY(30px); background: #5EEAD4; box-shadow: 0 0 10px var(--on-glow); }
+  .switch-thumb { width: 34px; height: 32px; background: var(--thumb-off); border-radius: 6px; transition: transform 0.2s ease; }
+  .switch-track.on .switch-thumb { transform: translateY(30px); background: #0D9488; box-shadow: 0 0 10px var(--on-glow); }
 
   .device-cost { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-family: monospace; font-size: 12px; }
 
@@ -93,7 +102,7 @@
   .period-card { background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 11px; }
 
   .month-config-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; font-family: monospace; font-size: 12px; flex-wrap: wrap; }
-  .month-config-row input { background: var(--panel-alt); border: 1px solid var(--border-light); color: #fff; padding: 4px 8px; border-radius: 4px; }
+  .month-config-row input { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-primary); padding: 4px 8px; border-radius: 4px; }
 
   .budget-bar-wrap { margin: 12px 0 4px; }
   .budget-bar-track { height: 10px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 5px; overflow: hidden; }
@@ -120,6 +129,38 @@
 
   footer { margin-top: 24px; font-family: monospace; font-size: 11px; color: var(--text-dim); line-height: 1.6; }
   footer code { background: var(--panel); padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); }
+
+  .theme-toggle { background: var(--panel); border: 1px solid var(--border); color: var(--text-secondary); font-size: 16px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .theme-toggle:hover { border-color: var(--on-color); color: var(--on-color); }
+
+  .alert-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .alert-banner { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5; border: 1px solid; }
+  .alert-banner.warn { background: rgba(234, 88, 12, 0.1); border-color: var(--warn-color); color: var(--warn-color); }
+  .alert-banner.danger { background: rgba(220, 38, 38, 0.1); border-color: var(--danger-color); color: var(--danger-color); }
+  .alert-icon { font-size: 18px; flex-shrink: 0; }
+
+  .quick-actions-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .btn-danger { background: var(--danger-color); border: 1px solid var(--danger-color); color: #fff; font-weight: 700; font-size: 13px; padding: 10px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 0 0 rgba(0,0,0,0); }
+  .btn-danger:hover { filter: brightness(1.08); box-shadow: 0 0 10px var(--danger-glow); }
+  .btn-scene { background: var(--panel-raised); border: 1px solid var(--border-light); color: var(--text-primary); font-weight: 600; font-size: 13px; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+  .btn-scene:hover { border-color: var(--on-color); color: var(--on-color); }
+
+  .timer-row { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+  .timer-label { font-family: monospace; font-size: 10px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; }
+  .timer-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .timer-btn { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 10px; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
+  .timer-btn:hover { border-color: var(--on-color); color: var(--on-color); }
+  .timer-active { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: monospace; font-size: 11px; color: var(--warn-color); }
+  .timer-cancel { background: transparent; border: 1px solid var(--border-light); color: var(--text-secondary); font-size: 10px; padding: 3px 8px; border-radius: 5px; cursor: pointer; }
+  .timer-cancel:hover { border-color: var(--danger-color); color: var(--danger-color); }
+
+  .compare-wrap { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .compare-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: monospace; font-size: 12px; }
+  .compare-bar-bg { flex: 1; height: 16px; background: var(--panel-alt); border-radius: 4px; overflow: hidden; }
+  .compare-bar-fill { height: 100%; border-radius: 4px; }
+  .compare-label { width: 92px; flex-shrink: 0; color: var(--text-secondary); }
+  .compare-val { width: 110px; flex-shrink: 0; text-align: right; }
+  .compare-delta { margin-top: 4px; font-family: monospace; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -133,23 +174,16 @@
       <span class="dot" id="connDot"></span>
       <span id="connText">ยังไม่ได้เชื่อมต่อ</span>
     </div>
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">🌙</button>
   </header>
 
+  <div class="alert-stack" id="alertStack"></div>
+
   <div class="config-panel">
-    <label>BROKER HOST</label>
-    <input id="cfgHost" type="text" placeholder="xxxxx.s1.eu.hivemq.cloud">
-    <label>PORT (WSS)</label>
-    <input id="cfgPort" type="text" value="8884" style="max-width:70px;">
-    <label>USERNAME</label>
-    <input id="cfgUser" type="text" placeholder="esp32user">
-    <label>PASSWORD</label>
-    <input id="cfgPass" type="password" placeholder="••••••••">
-    <label>PREFIX</label>
-    <input id="cfgPrefix" type="text" value="myhome" style="max-width:100px;">
     <label>ค่าไฟ (บาท/หน่วย)</label>
     <input id="cfgRate" type="number" step="0.01" value="4.40" style="max-width:80px;">
     <button class="btn-connect" id="btnConnect" onclick="handleConnectClick()">เชื่อมต่อ</button>
-    <div class="config-hint">ค่าที่กรอกจะถูกจำไว้ในเบราว์เซอร์นี้ (localStorage) ไม่ได้ส่งไปที่ไหน นอกจากไปที่ broker ที่ระบุเอง</div>
+    <div class="config-hint">ค่าเชื่อมต่อ (Broker Host/Username/Password/Prefix) ถูกฝังไว้ใน DEFAULT_CONFIG ที่ต้นไฟล์แล้ว แก้ไขได้ที่นั่น กดปุ่ม "เชื่อมต่อ" เพื่อเริ่มใช้งาน</div>
   </div>
 
   <div class="config-panel" id="geoPanel">
@@ -158,23 +192,25 @@
     <label>ตำแหน่งบอร์ด (Lng)</label>
     <input id="geoLng" type="text" placeholder="100.501800" style="max-width:120px;" onchange="onGeoLatLngChange()">
     <button class="btn-connect" onclick="useCurrentLocationAsBoard()">📍 ใช้ตำแหน่งปัจจุบันเป็นตำแหน่งบอร์ด</button>
-    <label>ระยะเปิดอัตโนมัติ (เมตร)</label>
-    <input id="geoThreshold" type="number" value="25" min="1" style="max-width:80px;" onchange="onGeoThresholdChange()">
     <label class="geo-check-label">
       <input id="geoEnabled" type="checkbox" onchange="onGeoEnabledChange()">
       เปิดใช้งานเปิด/ปิดอัตโนมัติตามระยะ
     </label>
-    <div class="config-hint">ต้องกดยอมรับให้เว็บนี้เข้าถึงตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน • เลือกอุปกรณ์ที่ต้องการรวมในระบบอัตโนมัติได้ที่การ์ดอุปกรณ์ด้านล่าง (เช็คบ็อกซ์ "รวมในระบบอัตโนมัติ") • Geolocation อาจใช้ไม่ได้ถ้าเปิดไฟล์ผ่าน file:// โดยตรงในบางเบราว์เซอร์ ลองรันผ่าน localhost หรือ HTTPS หากอ่านตำแหน่งไม่ได้</div>
+    <a class="btn-connect" href="geo-settings.html" target="_blank" rel="noopener" style="text-decoration:none;">⚙️ ตั้งค่ากฎเปิด/ปิดตามระยะ</a>
+    <span class="geo-status" id="geoRuleCount"></span>
+    <div class="config-hint">กำหนดได้เองว่าอุปกรณ์ไหนเปิด/ปิดที่ระยะกี่เมตร ทั้งตอน "เข้ามาในระยะ" และ "ออกเกินระยะ" ที่หน้า "ตั้งค่ากฎเปิด/ปิดตามระยะ" (เปิดในแท็บใหม่ บันทึกแล้วมีผลทันทีที่แท็บนี้) • ต้องกดยอมรับให้เว็บนี้เข้าถึงตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน • Geolocation อาจใช้ไม่ได้ถ้าเปิดไฟล์ผ่าน file:// โดยตรงในบางเบราว์เซอร์ ลองรันผ่าน localhost หรือ HTTPS หากอ่านตำแหน่งไม่ได้ • กฎชุดนี้ใช้ร่วมกับระบบ IFTTT พื้นหลัง (geo-trigger.js) ด้วยแล้ว ถ้ากดบันทึกกฎที่หน้าตั้งค่าไว้ (ซิงค์ขึ้นฐานข้อมูล) หน้านี้จะดึงกฎล่าสุดมาใช้ตอนเปิดหน้าโดยอัตโนมัติ</div>
   </div>
 
   <div class="config-panel" id="dbPanel">
-    <label>HISTORY API URL</label>
-    <input id="cfgHistUrl" type="text" placeholder="https://your-project.vercel.app">
-    <label>HISTORY TOKEN</label>
-    <input id="cfgHistToken" type="password" placeholder="••••••••">
     <button class="btn-connect" onclick="connectHistoryDb()">เชื่อมต่อฐานข้อมูล</button>
-    <div class="config-hint">ใช้ URL โปรเจกต์ Vercel และ Token (TRIGGER_TOKEN) เดียวกับที่ตั้งไว้ในโปรเจกต์ geo-mqtt-bridge เพื่อให้กราฟย้อนหลัง (รายชั่วโมง/รายวัน/สัดส่วนอุปกรณ์) ซิงค์ข้ามเครื่อง/มือถือ และไม่หายตอนล้าง cache เบราว์เซอร์ • ไม่บันทึก Token ไว้ในเครื่อง ต้องกรอกใหม่ทุกครั้งเพื่อความปลอดภัยขั้นต่ำ (เหมือนรหัสผ่าน broker) • ถ้าไม่กรอก ระบบจะยังเก็บกราฟไว้ในเบราว์เซอร์นี้เครื่องเดียวเหมือนเดิม</div>
+    <div class="config-hint">ค่า History API URL / Token ถูกฝังไว้ใน DEFAULT_CONFIG ที่ต้นไฟล์แล้ว แก้ไขได้ที่นั่น กดปุ่มนี้เพื่อให้กราฟย้อนหลัง (รายชั่วโมง/รายวัน/สัดส่วนอุปกรณ์) ซิงค์ข้ามเครื่อง/มือถือ • ถ้าไม่กด ระบบจะยังเก็บกราฟไว้ในเบราว์เซอร์นี้เครื่องเดียวเหมือนเดิม • ส่วน "กฎเปิด/ปิดตามระยะ" ซิงค์กับฐานข้อมูลอัตโนมัติอยู่แล้วทุกครั้งที่เปิดหน้า (ไม่ต้องกดปุ่มนี้)</div>
     <div style="font-family:monospace; font-size:11px; color:var(--text-dim); margin-top:4px;" id="histSyncStatus"></div>
+  </div>
+
+  <div class="quick-actions-row">
+    <button class="btn-danger" onclick="killSwitch()">🚨 ปิดทุกอย่างฉุกเฉิน</button>
+    <button class="btn-scene" onclick="sceneComeHome()">🏠 กลับบ้าน (ทำตามกฎ "เข้ามาในระยะ" ทั้งหมด)</button>
+    <button class="btn-scene" onclick="sceneLeaveHome()">🚪 ออกจากบ้าน (ทำตามกฎ "ออกเกินระยะ" ทั้งหมด)</button>
   </div>
 
   <div class="cost-summary">
@@ -201,8 +237,8 @@
     <div class="chart-box">
       <svg id="svgChart" viewBox="0 0 500 180" preserveAspectRatio="none">
         <defs>
-          <linearGradient id="grad0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5EEAD4" stop-opacity="0.35"/><stop offset="100%" stop-color="#5EEAD4" stop-opacity="0"/></linearGradient>
-          <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF8A5B" stop-opacity="0.35"/><stop offset="100%" stop-color="#FF8A5B" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D9488" stop-opacity="0.35"/><stop offset="100%" stop-color="#0D9488" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EA580C" stop-opacity="0.35"/><stop offset="100%" stop-color="#EA580C" stop-opacity="0"/></linearGradient>
           <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7DD3FC" stop-opacity="0.35"/><stop offset="100%" stop-color="#7DD3FC" stop-opacity="0"/></linearGradient>
           <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C4B5FD" stop-opacity="0.35"/><stop offset="100%" stop-color="#C4B5FD" stop-opacity="0"/></linearGradient>
         </defs>
@@ -279,6 +315,11 @@
       </div>
 
       <div class="bar-chart-svg"><svg viewBox="0 0 500 150" id="monthBarSvg"></svg></div>
+
+      <div class="compare-wrap">
+        <div style="font-family:monospace; font-size:12px; font-weight:600; margin-bottom:10px;">เทียบกับเดือนก่อนหน้า</div>
+        <div id="monthCompare"></div>
+      </div>
     </div>
 
     <div class="advice-box">
@@ -304,8 +345,28 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+<script src="devices-config.js"></script>
 <script>
   // ---------- ตั้งค่าทั่วไป ----------
+  // ---------- ค่าเชื่อมต่อที่ฝังไว้ในโค้ด (กรอกครั้งเดียวตรงนี้ ไม่ต้องพิมพ์ในหน้าเว็บอีก) ----------
+  // ⚠️ คำเตือนความปลอดภัย: ค่าทุกตัวด้านล่าง โดยเฉพาะ pass และ histToken จะถูกเก็บเป็น
+  // ข้อความธรรมดา (plain text) อยู่ในไฟล์นี้ ใครก็ตามที่เปิดไฟล์นี้ดู หรือกด "View Source"
+  // จะเห็นรหัสผ่าน/token ได้ทันที ห้ามอัปโหลดไฟล์นี้ (ที่กรอกค่าแล้ว) ขึ้น GitHub/เว็บ public
+  // หรือส่งต่อให้คนอื่น ใช้เก็บไว้เปิดจากเครื่อง/มือถือของตัวเองเท่านั้น
+  // เว้นค่าไหนเป็น "" ไว้ได้ตามปกติ ถ้าอยากพิมพ์เองในหน้าเว็บเหมือนเดิม
+  const DEFAULT_CONFIG = {
+    host: "a130eedbb798414f983f14f784934179.s1.eu.hivemq.cloud",
+    port: "8884",
+    user: "esp32",
+    pass: "25022005",
+    prefix: "myhome",
+    rate: 4.40,
+    histUrl: "https://geo-mqtt-bridge.vercel.app",
+    histToken: "mysmarthome",  // TRIGGER_TOKEN เดียวกับที่ตั้งในโปรเจกต์ geo-mqtt-bridge
+    maxWatt: 1500,             // ถ้ากำลังไฟรวมที่เปิดอยู่ ณ ขณะนั้นเกินค่านี้ (วัตต์) จะขึ้นแจ้งเตือนกันเบรกเกอร์ตัด/ไฟเกิน
+    staleTelemetrySec: 20      // ถ้าไม่มีข้อมูล telemetry จากบอร์ดเข้ามาเกินกี่วินาที ให้ถือว่าบอร์ดอาจหลุด/ไม่ทราบสถานะจริง
+  };
+
   let rate = 4.40;
   let prefix = "myhome";
   let client = null;
@@ -313,53 +374,77 @@
 
   // devices[id] = { name, watt, state, kwh }
   let devices = {};
-  const COLORS = ['#5EEAD4', '#FF8A5B', '#7DD3FC', '#C4B5FD'];
-  const DEVICE_NAMES = { aircon: "แอร์", light: "ไฟ", fan: "พัดลม", plug: "ปลั๊กไฟทั่วไป" };
+  const COLORS = ['#0D9488', '#EA580C', '#0284C7', '#7C3AED'];
+  // หมายเหตุ: DEVICE_NAMES มาจาก devices-config.js (ไฟล์เดียวกับที่ geo-settings.html ใช้)
+  // เพื่อกันไม่ให้รายชื่ออุปกรณ์ของสองหน้าเว็บไม่ตรงกัน — ถ้าจะเพิ่ม/แก้อุปกรณ์ แก้ที่ devices-config.js
 
   let historyData = {}; // สำหรับกราฟเรียลไทม์ (เก็บย้อนหลัง 30 จุด ต่ออุปกรณ์)
 
-  // ---------- ระบบเปิด/ปิดอัตโนมัติตามระยะห่าง (Geofencing) ----------
-  let geoLat = null, geoLng = null, geoThreshold = 25, geoEnabled = false; // แก้จาก 1 เมตร เป็น 25 เมตร เพราะ GPS มือถือทั่วไปคลาดเคลื่อน 5-20 ม.
+  // ---------- แจ้งเตือนความปลอดภัย: บอร์ดหลุดการเชื่อมต่อ / ใช้ไฟเกิน ----------
+  let lastTelemetryAt = 0; // เวลาล่าสุด (ms) ที่ได้รับ telemetry จากบอร์ดจริงๆ
+
+  // ---------- ตั้งเวลาปิดอัตโนมัติรายอุปกรณ์ (Sleep Timer) ----------
+  const TIMER_KEY = "mqtt_dashboard_timers";
+  let deviceTimers = {}; // { [id]: endAt(ms) }
+  let timerTickHandle = null;
+
+  // ---------- ธีมสว่าง/มืด ----------
+  const THEME_KEY = "mqtt_dashboard_theme";
+
+
+  // ---------- ระบบเปิด/ปิดอัตโนมัติตามระยะห่าง (Geofencing) แบบกำหนดกฎเองได้ ----------
+  // กฎแต่ละข้อ (geoRules) = { id, deviceId, distanceM, direction: 'enter'|'leave', action: 'on'|'off' }
+  // แก้ไขกฎได้ที่หน้า geo-settings.html — หน้านี้แค่ "อ่าน" กฎมาทำงานตามระยะจริงที่วัดได้
+  let geoLat = null, geoLng = null, geoEnabled = false;
+  let geoRules = [];
   let geoWatchId = null;
-  let autoDeviceIds = new Set(); // อุปกรณ์ที่เลือกให้เข้าระบบอัตโนมัติ
-  let insideZone = null;         // null = ยังไม่รู้สถานะ, true/false = อยู่ในระยะ/นอกระยะล่าสุด
   let lastAutoActionAt = 0;
   const GEO_COOLDOWN_MS = 10000;   // กันสั่งเปิด/ปิดถี่เกินไป
   const GEO_HYSTERESIS_M = 15;     // ระยะกันชนกัน GPS แกว่งแล้วสวิตช์รัว
   let distanceBuffer = [];         // เก็บระยะล่าสุดไว้หาค่ามัธยฐาน (กรอง spike)
   const GEO_BUFFER_SIZE = 5;
   const GEO_MAX_ACCURACY_M = 100;  // ทิ้งค่าที่ GPS ไม่แม่นยำเกินนี้ (เมตร)
-  let pendingSide = null;          // ฝั่งที่กำลังรอการยืนยัน ('in' / 'out')
-  let sideStreak = 0;              // จำนวนครั้งติดต่อกันที่อยู่ฝั่งเดียวกัน
   const GEO_CONFIRM_COUNT = 3;     // ต้องยืนยันกี่ครั้งติดกันก่อนสั่งเปลี่ยนสถานะจริง
+
+  // สถานะฝั่ง (ใน/นอก) ของแต่ละ "ระยะ" ที่ถูกใช้ในกฎ พร้อมตัวช่วยยืนยัน (กันค่า GPS กระโดด/แกว่ง)
+  // เก็บเป็น map แยกตามค่าระยะ (เมตร) เพราะกฎหลายข้ออาจใช้ระยะเดียวกัน ควรใช้ tracker เดียวกัน
+  function makeBoundaryTracker() { return { side: null, pending: null, streak: 0 }; }
+  let boundaryTrackers = {}; // { [distanceM]: tracker }
+
+  function distinctRuleDistances() {
+    return [...new Set(geoRules.map(r => Number(r.distanceM)))].filter(d => d > 0);
+  }
+
+  function rebuildBoundaryTrackers() {
+    boundaryTrackers = {};
+    distinctRuleDistances().forEach(d => { boundaryTrackers[d] = makeBoundaryTracker(); });
+  }
+
+  // ---------- อ่านค่าสี CSS variable ปัจจุบัน (เปลี่ยนตามธีมสว่าง/มืดอัตโนมัติ) ----------
+  function cssVar(name) {
+    return getComputedStyle(document.body).getPropertyValue(name).trim();
+  }
 
   // ---------- โหลด/บันทึกค่า config จาก localStorage ----------
   function loadConfig() {
     const saved = localStorage.getItem("mqtt_dashboard_config");
-    if (!saved) return;
-    try {
-      const cfg = JSON.parse(saved);
-      document.getElementById("cfgHost").value = cfg.host || "";
-      document.getElementById("cfgPort").value = cfg.port || "8884";
-      document.getElementById("cfgUser").value = cfg.user || "";
-      document.getElementById("cfgPrefix").value = cfg.prefix || "myhome";
-      document.getElementById("cfgRate").value = cfg.rate || 4.40;
-      document.getElementById("cfgHistUrl").value = cfg.histUrl || "";
-      // ไม่บันทึกรหัสผ่าน/Token ไว้ ให้ผู้ใช้กรอกใหม่ทุกครั้งเพื่อความปลอดภัยขั้นต่ำ
-    } catch (e) {}
+    let cfg = {};
+    if (saved) {
+      try { cfg = JSON.parse(saved); } catch (e) { cfg = {}; }
+    }
+    // ค่าเชื่อมต่อ (host/port/user/pass/prefix/histUrl/histToken) มาจาก DEFAULT_CONFIG โดยตรงแล้ว
+    // เหลือแค่ "ค่าไฟ" ที่ยังปรับได้จากหน้าเว็บและจำไว้ใน localStorage
+    document.getElementById("cfgRate").value = cfg.rate || DEFAULT_CONFIG.rate || 4.40;
+    prefix = DEFAULT_CONFIG.prefix || "myhome";
   }
 
   function saveConfig() {
     const cfg = {
-      host: document.getElementById("cfgHost").value,
-      port: document.getElementById("cfgPort").value,
-      user: document.getElementById("cfgUser").value,
-      prefix: document.getElementById("cfgPrefix").value,
-      rate: document.getElementById("cfgRate").value,
-      histUrl: document.getElementById("cfgHistUrl").value
+      rate: document.getElementById("cfgRate").value
     };
     localStorage.setItem("mqtt_dashboard_config", JSON.stringify(cfg));
   }
+
 
   function setConnected(isConnected) {
     connected = isConnected;
@@ -381,15 +466,15 @@
   }
 
   function connectMqtt() {
-    const host = document.getElementById("cfgHost").value.trim();
-    const port = document.getElementById("cfgPort").value.trim();
-    const user = document.getElementById("cfgUser").value.trim();
-    const pass = document.getElementById("cfgPass").value.trim();
-    prefix = document.getElementById("cfgPrefix").value.trim() || "myhome";
+    const host = (DEFAULT_CONFIG.host || "").trim();
+    const port = (DEFAULT_CONFIG.port || "8884").trim();
+    const user = (DEFAULT_CONFIG.user || "").trim();
+    const pass = (DEFAULT_CONFIG.pass || "").trim();
+    prefix = (DEFAULT_CONFIG.prefix || "myhome").trim();
     rate = parseFloat(document.getElementById("cfgRate").value) || 4.40;
 
     if (!host || !user || !pass) {
-      alert("กรุณากรอก Broker Host, Username และ Password ให้ครบก่อนเชื่อมต่อ");
+      alert("ยังไม่ได้ตั้งค่า Broker Host / Username / Password ใน DEFAULT_CONFIG ที่ต้นไฟล์ (ในส่วน <script>)");
       return;
     }
 
@@ -440,6 +525,7 @@
     if (parts.length === 2 && parts[1] === 'telemetry') {
       try {
         const data = JSON.parse(message);
+        lastTelemetryAt = Date.now();
         Object.keys(data).forEach(key => {
           if (key === 'totalKwh') return;
           const d = data[key];
@@ -454,6 +540,7 @@
         renderBreakers();
         renderCostSummary(data.totalKwh || 0);
         updateChartHistory();
+        renderAlerts(); // เช็คใช้ไฟเกิน/บอร์ดหลุดใหม่ทุกครั้งที่มีข้อมูลเข้า
         recordHistoryDelta(); // บันทึกส่วนต่างพลังงานลง localStorage สำหรับกราฟรายวัน/รายเดือน
       } catch (e) {
         console.error("แปลง telemetry JSON ไม่สำเร็จ:", e);
@@ -476,6 +563,7 @@
     const newState = !devices[id].state;
     // อัปเดตหน้าจอทันทีแบบ optimistic แล้วรอ ESP32 ยืนยันกลับผ่าน .../state
     devices[id].state = newState;
+    if (!newState) clearDeviceTimer(id, false); // ปิดเองแล้ว ไม่ต้องรอตัวตั้งเวลาอีก
     renderBreakers();
     client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF");
   }
@@ -495,6 +583,16 @@
       const cost = (dev.kwh || 0) * rate;
       const card = document.createElement("div");
       card.className = "breaker" + (isOn ? " is-on" : "");
+      const timerHtml = isOn
+        ? (deviceTimers[id]
+            ? `<div class="timer-active"><span>⏱ ปิดอัตโนมัติใน ${formatCountdown(deviceTimers[id]-Date.now())}</span><button class="timer-cancel" onclick="clearDeviceTimer('${id}')">ยกเลิก</button></div>`
+            : `<div class="timer-btns">
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',30)">30 นาที</button>
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',60)">1 ชม.</button>
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',180)">3 ชม.</button>
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',360)">6 ชม.</button>
+               </div>`)
+        : "";
       card.innerHTML = `
         <div class="breaker-top">
           <div>
@@ -513,10 +611,10 @@
           <span style="color:var(--text-secondary);">${dev.watt} W</span>
           <span style="color:var(--on-color); font-weight:600;">฿${cost.toFixed(2)}</span>
         </div>
-        <label class="auto-check-label">
-          <input type="checkbox" ${autoDeviceIds.has(id) ? 'checked' : ''} onchange="toggleAutoDevice('${id}', this.checked)">
-          รวมในระบบเปิด/ปิดอัตโนมัติตามระยะ
-        </label>
+        <div class="timer-row">
+          <div class="timer-label">ตั้งเวลาปิดอัตโนมัติ</div>
+          ${timerHtml || '<div style="font-family:monospace; font-size:10px; color:var(--text-dim);">เปิดอุปกรณ์ก่อนจึงตั้งเวลาได้</div>'}
+        </div>
       `;
       grid.appendChild(card);
     });
@@ -605,24 +703,53 @@
         const cfg = JSON.parse(saved);
         geoLat = (cfg.lat === null || cfg.lat === undefined) ? null : cfg.lat;
         geoLng = (cfg.lng === null || cfg.lng === undefined) ? null : cfg.lng;
-        geoThreshold = cfg.threshold || 25;
         geoEnabled = !!cfg.enabled;
-        autoDeviceIds = new Set(cfg.autoDeviceIds || []);
       } catch (e) {}
     }
     document.getElementById("geoLat").value = geoLat !== null ? geoLat : "";
     document.getElementById("geoLng").value = geoLng !== null ? geoLng : "";
-    document.getElementById("geoThreshold").value = geoThreshold;
     document.getElementById("geoEnabled").checked = geoEnabled;
+    refreshGeoRules();
     if (geoEnabled && geoLat !== null && geoLng !== null) startGeoWatch();
   }
 
   function saveGeoConfig() {
-    const cfg = {
-      lat: geoLat, lng: geoLng, threshold: geoThreshold,
-      enabled: geoEnabled, autoDeviceIds: Array.from(autoDeviceIds)
-    };
+    const cfg = { lat: geoLat, lng: geoLng, enabled: geoEnabled };
     localStorage.setItem("mqtt_dashboard_geo", JSON.stringify(cfg));
+  }
+
+  // ---------- โหลดกฎ (รายการอุปกรณ์+ระยะ+การกระทำ) จากที่หน้า geo-settings.html บันทึกไว้ ----------
+  function refreshGeoRules() {
+    geoRules = loadGeoRulesFromStorage(); // มาจาก devices-config.js
+    rebuildBoundaryTrackers();
+    const countEl = document.getElementById("geoRuleCount");
+    if (countEl) countEl.textContent = `ใช้งานอยู่ ${geoRules.length} กฎ`;
+  }
+
+  // ถ้าเปิดหน้า geo-settings.html ไว้อีกแท็บแล้วบันทึกกฎใหม่ ให้หน้านี้รับรู้ทันทีโดยไม่ต้องรีเฟรช
+  window.addEventListener("storage", (e) => {
+    if (e.key === GEO_RULES_KEY) refreshGeoRules();
+  });
+
+  // ---------- ดึงกฎล่าสุดจากฐานข้อมูลกลาง (โปรเจกต์ geo-mqtt-bridge เดียวกับ History API) ----------
+  // ให้กฎที่เห็นในหน้านี้ตรงกับที่บันทึกล่าสุดจากหน้า geo-settings.html ไม่ว่าจะแก้จากเครื่อง/มือถือเครื่องไหน
+  // ถ้าไม่ได้ตั้งค่า histUrl/histToken ไว้ หรือดึงไม่สำเร็จ จะใช้กฎจาก localStorage ของเครื่องนี้ต่อไปเงียบๆ
+  async function pullGeoRulesFromBridge() {
+    const apiUrl = (DEFAULT_CONFIG.histUrl || "").trim();
+    const apiToken = (DEFAULT_CONFIG.histToken || "").trim();
+    if (!apiUrl || !apiToken) return;
+    try {
+      const remote = await fetchRulesFromBridge(apiUrl, apiToken); // มาจาก devices-config.js
+      if (remote !== null && remote.length > 0) {
+        geoRules = remote.map(r => ({ ...r }));
+        saveGeoRulesToStorage(geoRules); // เก็บสำเนาไว้ในเครื่องนี้ด้วย เผื่อใช้งานออฟไลน์/เปิดไฟล์นี้อีกรอบ
+        rebuildBoundaryTrackers();
+        const countEl = document.getElementById("geoRuleCount");
+        if (countEl) countEl.textContent = `ใช้งานอยู่ ${geoRules.length} กฎ (ซิงค์จากฐานข้อมูล)`;
+      }
+    } catch (e) {
+      console.error("ดึงกฎเปิด/ปิดตามระยะจากฐานข้อมูลไม่สำเร็จ:", e);
+    }
   }
 
   // ---------- ปักหมุดตำแหน่งบอร์ดจากตำแหน่งปัจจุบันของเบราว์เซอร์ ----------
@@ -655,15 +782,6 @@
     saveGeoConfig();
   }
 
-  function onGeoThresholdChange() {
-    geoThreshold = parseFloat(document.getElementById("geoThreshold").value) || 25;
-    insideZone = null; // เกณฑ์เปลี่ยน ให้ประเมินสถานะใหม่รอบถัดไป
-    distanceBuffer = [];
-    pendingSide = null;
-    sideStreak = 0;
-    saveGeoConfig();
-  }
-
   function onGeoEnabledChange() {
     geoEnabled = document.getElementById("geoEnabled").checked;
     if (geoEnabled && (geoLat === null || geoLng === null)) {
@@ -683,10 +801,8 @@
       return;
     }
     if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
-    insideZone = null;
+    rebuildBoundaryTrackers();
     distanceBuffer = [];
-    pendingSide = null;
-    sideStreak = 0;
     geoWatchId = navigator.geolocation.watchPosition(
       handlePositionUpdate,
       (err) => { document.getElementById("geoStatus").textContent = "อ่านตำแหน่งไม่ได้: " + err.message; },
@@ -701,7 +817,7 @@
     }
     document.getElementById("geoDistance").textContent = "--";
     document.getElementById("geoStatus").textContent = "ยังไม่ได้เปิดใช้งาน";
-    insideZone = null;
+    rebuildBoundaryTrackers();
   }
 
   // สูตร Haversine: คำนวณระยะทางตรง (เมตร) ระหว่างพิกัด 2 จุดบนโลก
@@ -742,55 +858,209 @@
     document.getElementById("geoDistance").textContent =
       smoothDist < 1000 ? `${smoothDist.toFixed(0)} ม.` : `${(smoothDist / 1000).toFixed(2)} กม.`;
 
-    const nowInside = smoothDist <= geoThreshold;
     document.getElementById("geoStatus").textContent =
-      (nowInside ? "อยู่ในระยะ ✓" : "อยู่นอกระยะ") +
-      ` (เกณฑ์ ${geoThreshold} ม. • GPS ±${accuracy.toFixed(0)} ม.)`;
+      `GPS ±${accuracy.toFixed(0)} ม. • ใช้งานอยู่ ${geoRules.length} กฎ`;
 
     evaluateAutoControl(smoothDist);
   }
 
-  // ตัดสินใจสั่งเปิด/ปิดอุปกรณ์ที่เลือกไว้ โดยต้องยืนยันซ้ำหลายครั้งติดกัน (กัน spike)
-  // + มีระยะกันชน (hysteresis) + ช่วงกันสั่งถี่ (cooldown)
-  function evaluateAutoControl(dist) {
-    if (!geoEnabled || !connected || autoDeviceIds.size === 0) return;
+  // ---------- สั่งเปิด/ปิดอุปกรณ์เป้าหมายแบบระบุสถานะตรงๆ (ใช้โดยระบบอัตโนมัติ) ----------
+  function setDeviceState(id, on) {
+    if (!connected || !devices[id]) return; // ยังไม่เชื่อมต่อ หรือยังไม่มีอุปกรณ์นี้ใน telemetry ก็ข้ามไปเงียบๆ
+    if (devices[id].state === on) return;   // สถานะตรงกับที่ต้องการอยู่แล้ว ไม่ต้องสั่งซ้ำ
+    devices[id].state = on;
+    if (!on) clearDeviceTimer(id, false);
+    renderBreakers();
+    client.publish(`${prefix}/${id}/set`, on ? "ON" : "OFF");
+  }
 
-    const enterBoundary = geoThreshold;
-    const exitBoundary = geoThreshold + GEO_HYSTERESIS_M;
+  // ---------- ใช้กฎ (geoRules) สั่งอุปกรณ์ ----------
+  // direction: 'enter' = ใช้กฎที่ตั้งไว้สำหรับตอน "เข้ามาในระยะนี้"
+  //            'leave'  = ใช้กฎที่ตั้งไว้สำหรับตอน "ออกเกินระยะนี้"
+  // distanceM: ถ้าระบุ จะสั่งเฉพาะกฎของระยะนั้น, ถ้าไม่ระบุ (undefined) จะสั่งทุกกฎที่ตรง direction (ใช้กับปุ่มฉากกดเอง)
+  function applyRules(direction, distanceM) {
+    geoRules
+      .filter(r => r.direction === direction && (distanceM === undefined || Number(r.distanceM) === distanceM))
+      .forEach(r => setDeviceState(r.deviceId, r.action === 'on'));
+  }
+
+  // ตรวจการข้ามฝั่งของเกณฑ์ระยะหนึ่งเส้น โดยต้องยืนยันซ้ำหลายครั้งติดกัน (กัน spike) + มีระยะกันชน (hysteresis)
+  // คืนค่า 'in' / 'out' เมื่อพบการข้ามฝั่งใหม่ที่ยืนยันแล้ว (ยังไม่ commit ให้ tracker.side จนกว่าจะสั่งงานสำเร็จ)
+  function updateBoundary(tracker, dist, threshold) {
+    const enterBoundary = threshold;
+    const exitBoundary = threshold + GEO_HYSTERESIS_M;
 
     let currentSide = null;
     if (dist <= enterBoundary) currentSide = 'in';
     else if (dist > exitBoundary) currentSide = 'out';
     // ถ้าอยู่ในโซนกันชนระหว่างสองเส้น ไม่นับเป็นฝั่งไหน รอข้อมูลรอบถัดไป
+    if (currentSide === null) { tracker.pending = null; tracker.streak = 0; return null; }
 
-    if (currentSide === null) { pendingSide = null; sideStreak = 0; return; }
+    if (currentSide === tracker.pending) tracker.streak++;
+    else { tracker.pending = currentSide; tracker.streak = 1; }
 
-    if (currentSide === pendingSide) {
-      sideStreak++;
-    } else {
-      pendingSide = currentSide;
-      sideStreak = 1;
-    }
-
-    if (sideStreak < GEO_CONFIRM_COUNT) return; // ยืนยันไม่ครบจำนวนครั้ง ยังไม่สั่งงาน
-
-    const now = Date.now();
-    if (now - lastAutoActionAt < GEO_COOLDOWN_MS) return;
-
-    if (currentSide === 'in' && insideZone !== true) {
-      insideZone = true;
-      lastAutoActionAt = now;
-      autoDeviceIds.forEach(id => { if (devices[id] && !devices[id].state) toggleDevice(id); });
-    } else if (currentSide === 'out' && insideZone !== false) {
-      insideZone = false;
-      lastAutoActionAt = now;
-      autoDeviceIds.forEach(id => { if (devices[id] && devices[id].state) toggleDevice(id); });
-    }
+    if (tracker.streak < GEO_CONFIRM_COUNT) return null; // ยืนยันไม่ครบจำนวนครั้ง ยังไม่สั่งงาน
+    if (tracker.side === currentSide) return null;        // ฝั่งเดิม ไม่ใช่การข้ามฝั่งใหม่
+    return currentSide;
   }
 
-  function toggleAutoDevice(id, checked) {
-    if (checked) autoDeviceIds.add(id); else autoDeviceIds.delete(id);
-    saveGeoConfig();
+  // ตัดสินใจสั่งอุปกรณ์จากระยะปัจจุบัน โดยเช็คทุก "ระยะ" ที่ถูกใช้ในกฎ (geoRules) อย่างอิสระต่อกัน
+  // (แต่ละระยะมี tracker ของตัวเอง กันสวิตช์รัวแยกกัน) + ช่วงกันสั่งถี่ (cooldown) ร่วมกันทั้งหมด
+  function evaluateAutoControl(dist) {
+    if (!geoEnabled || !connected) return;
+
+    const crossings = {}; // { [distanceM]: 'in' | 'out' }
+    distinctRuleDistances().forEach(d => {
+      const tracker = boundaryTrackers[d] || (boundaryTrackers[d] = makeBoundaryTracker());
+      const cross = updateBoundary(tracker, dist, d);
+      if (cross !== null) crossings[d] = cross;
+    });
+    if (Object.keys(crossings).length === 0) return;
+
+    const now = Date.now();
+    if (now - lastAutoActionAt < GEO_COOLDOWN_MS) return; // รอ cooldown ก่อน ยังไม่ commit ฝั่งใหม่ จะตรวจพบซ้ำได้รอบถัดไป
+
+    Object.keys(crossings).forEach(dStr => {
+      const d = Number(dStr);
+      const side = crossings[dStr];
+      boundaryTrackers[d].side = side;
+      applyRules(side === 'in' ? 'enter' : 'leave', d);
+    });
+
+    lastAutoActionAt = now;
+  }
+
+  // ================== ธีมสว่าง/มืด ==================
+  function applyTheme(theme) {
+    document.body.classList.toggle('theme-dark', theme === 'dark');
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+
+  function loadTheme() {
+    applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+  }
+
+  function toggleTheme() {
+    const next = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem(THEME_KEY, next);
+    // กราฟ/โดนัทบางส่วนวาดด้วย SVG ตรงๆ ไม่ใช่ CSS ต้องสั่งวาดใหม่ให้สีตรงกับธีม
+    renderTodayBars(); renderMonthBars(); renderDeviceDonut(); renderRankings();
+  }
+
+  // ================== แจ้งเตือนความปลอดภัย: บอร์ดหลุด / ใช้ไฟเกิน ==================
+  function renderAlerts() {
+    const stack = document.getElementById('alertStack');
+    if (!stack) return;
+    const alerts = [];
+
+    if (connected && lastTelemetryAt > 0) {
+      const idleSec = (Date.now() - lastTelemetryAt) / 1000;
+      if (idleSec > DEFAULT_CONFIG.staleTelemetrySec) {
+        alerts.push({ type: 'danger', icon: '⚠️',
+          text: `ไม่ได้รับข้อมูลจากบอร์ดมา ${idleSec.toFixed(0)} วินาทีแล้ว สถานะอุปกรณ์ที่แสดงอยู่อาจไม่ตรงกับความเป็นจริง (บอร์ดอาจหลุดเน็ต/รีสตาร์ท/ไฟดับ) — ตรวจสอบบอร์ดจริงก่อนเชื่อสถานะบนหน้าจอ` });
+      }
+    }
+
+    const totalWattOn = Object.values(devices).reduce((sum, d) => sum + (d.state ? (d.watt || 0) : 0), 0);
+    if (totalWattOn >= DEFAULT_CONFIG.maxWatt) {
+      alerts.push({ type: 'warn', icon: '🔥',
+        text: `กำลังไฟรวมที่เปิดใช้งานอยู่ตอนนี้สูงถึง ${totalWattOn} W (เกินเกณฑ์ ${DEFAULT_CONFIG.maxWatt} W ที่ตั้งไว้) เสี่ยงเบรกเกอร์ตัดหรือสายไฟ/ปลั๊กร้อนเกิน แนะนำปิดบางอุปกรณ์ลง` });
+    }
+
+    stack.innerHTML = alerts.map(a => `
+      <div class="alert-banner ${a.type}"><span class="alert-icon">${a.icon}</span><span>${a.text}</span></div>
+    `).join("");
+  }
+
+  // เช็คความเงียบของ telemetry เป็นระยะ เผื่อกรณีไม่มีข้อความ MQTT ใหม่เข้ามาเลย (ต่างจากตอนได้รับ telemetry ที่เช็คสดอยู่แล้ว)
+  setInterval(() => { if (connected) renderAlerts(); }, 5000);
+
+  // ================== ปุ่มฉุกเฉิน: ปิดทุกอุปกรณ์ทันที ==================
+  function killSwitch() {
+    if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
+    const onIds = Object.keys(devices).filter(id => devices[id].state);
+    if (onIds.length === 0) { alert('ไม่มีอุปกรณ์ที่เปิดอยู่ในขณะนี้'); return; }
+    if (!confirm(`ยืนยันปิดอุปกรณ์ทั้งหมด ${onIds.length} รายการทันทีหรือไม่?`)) return;
+    onIds.forEach(id => {
+      devices[id].state = false;
+      client.publish(`${prefix}/${id}/set`, "OFF");
+      clearDeviceTimer(id, false);
+    });
+    renderBreakers();
+    renderAlerts();
+  }
+
+  // ================== ฉากอัตโนมัติ: กลับบ้าน / ออกจากบ้าน (ปุ่มกดเอง ใช้ชุดคำสั่งเดียวกับระบบระยะทาง) ==================
+  function sceneComeHome() {
+    if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
+    applyRules('enter'); // ทุกกฎที่ตั้งไว้สำหรับ "เข้ามาในระยะ" ไม่ว่าจะกี่เมตรก็ตาม
+  }
+
+  function sceneLeaveHome() {
+    if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
+    applyRules('leave'); // ทุกกฎที่ตั้งไว้สำหรับ "ออกเกินระยะ" ไม่ว่าจะกี่เมตรก็ตาม
+  }
+
+  // ================== ตั้งเวลาปิดอัตโนมัติรายอุปกรณ์ (Sleep Timer) ==================
+  function loadDeviceTimers() {
+    try {
+      const saved = localStorage.getItem(TIMER_KEY);
+      deviceTimers = saved ? JSON.parse(saved) : {};
+    } catch (e) { deviceTimers = {}; }
+    if (Object.keys(deviceTimers).length > 0) ensureTimerTick();
+  }
+
+  function saveDeviceTimers() {
+    localStorage.setItem(TIMER_KEY, JSON.stringify(deviceTimers));
+  }
+
+  function setDeviceTimer(id, minutes) {
+    deviceTimers[id] = Date.now() + minutes * 60000;
+    saveDeviceTimers();
+    ensureTimerTick();
+    renderBreakers();
+  }
+
+  function clearDeviceTimer(id, rerender = true) {
+    if (deviceTimers[id] === undefined) return;
+    delete deviceTimers[id];
+    saveDeviceTimers();
+    if (rerender) renderBreakers();
+  }
+
+  function ensureTimerTick() {
+    if (timerTickHandle) return;
+    timerTickHandle = setInterval(tickDeviceTimers, 1000);
+  }
+
+  function tickDeviceTimers() {
+    if (Object.keys(deviceTimers).length === 0) {
+      clearInterval(timerTickHandle);
+      timerTickHandle = null;
+      return;
+    }
+    const now = Date.now();
+    let changed = false;
+    Object.keys(deviceTimers).forEach(id => {
+      if (now >= deviceTimers[id]) {
+        if (connected && client) client.publish(`${prefix}/${id}/set`, "OFF");
+        if (devices[id]) devices[id].state = false;
+        delete deviceTimers[id];
+        changed = true;
+      }
+    });
+    if (changed) saveDeviceTimers();
+    renderBreakers();
+  }
+
+  function formatCountdown(ms) {
+    const totalSec = Math.max(0, Math.round(ms / 1000));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
   }
 
   // ---------- ส่งออก CSV ----------
@@ -862,13 +1132,12 @@
   }
 
   function connectHistoryDb() {
-    histApiUrl = document.getElementById("cfgHistUrl").value.trim();
-    histApiToken = document.getElementById("cfgHistToken").value.trim();
+    histApiUrl = (DEFAULT_CONFIG.histUrl || "").trim();
+    histApiToken = (DEFAULT_CONFIG.histToken || "").trim();
     if (!histApiUrl || !histApiToken) {
-      alert("กรุณากรอก History API URL และ Token ให้ครบก่อนเชื่อมต่อฐานข้อมูล");
+      alert("ยังไม่ได้ตั้งค่า History API URL / Token ใน DEFAULT_CONFIG ที่ต้นไฟล์ (ในส่วน <script>)");
       return;
     }
-    saveConfig(); // เก็บ URL ไว้ (ไม่เก็บ token)
     fetchHistoryFromServer();
   }
 
@@ -1009,7 +1278,7 @@
       svg.appendChild(rect);
       if (i%2===0) {
         const text = document.createElementNS("http://www.w3.org/2000/svg","text");
-        text.setAttribute("x",x-2); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill","#8B94A0");
+        text.setAttribute("x",x-2); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill",cssVar('--text-dim'));
         text.textContent = String(i).padStart(2,'0');
         svg.appendChild(text);
       }
@@ -1066,11 +1335,55 @@
       svg.appendChild(rect);
       if (daysInMonth <= 31 && (i+1) % (daysInMonth > 20 ? 3 : 2) === 0) {
         const text = document.createElementNS("http://www.w3.org/2000/svg","text");
-        text.setAttribute("x",x); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill","#8B94A0");
+        text.setAttribute("x",x); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill",cssVar('--text-dim'));
         text.textContent = String(i+1).padStart(2,'0');
         svg.appendChild(text);
       }
     });
+
+    renderMonthCompare(y, m, sumKwh);
+  }
+
+  // ---------- เทียบการใช้ไฟเดือนที่เลือกกับเดือนก่อนหน้า ----------
+  function renderMonthCompare(y, m, sumKwh) {
+    const el = document.getElementById('monthCompare');
+    if (!el) return;
+    let prevY = y, prevM = m - 1;
+    if (prevM < 1) { prevM = 12; prevY = y - 1; }
+    const prevDaysInMonth = new Date(prevY, prevM, 0).getDate();
+    let prevSum = 0;
+    for (let d = 1; d <= prevDaysInMonth; d++) {
+      const key = `${prevY}-${String(prevM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      prevSum += hist.daily[key] || 0;
+    }
+
+    if (prevSum <= 0) {
+      el.innerHTML = `<div style="font-family:monospace; font-size:11px; color:var(--text-dim);">ยังไม่มีข้อมูลของเดือนก่อนหน้า (${prevY}-${String(prevM).padStart(2,'0')}) ให้เทียบ</div>`;
+      return;
+    }
+
+    const curCost = sumKwh * rate;
+    const prevCost = prevSum * rate;
+    const maxVal = Math.max(sumKwh, prevSum, 0.1);
+    const diffPct = ((sumKwh - prevSum) / prevSum) * 100;
+    const diffColor = diffPct > 0 ? 'var(--warn-color)' : 'var(--on-color)';
+    const diffText = diffPct > 0
+      ? `ใช้ไฟเพิ่มขึ้น ${diffPct.toFixed(1)}% เทียบกับเดือนก่อน`
+      : `ใช้ไฟลดลง ${Math.abs(diffPct).toFixed(1)}% เทียบกับเดือนก่อน`;
+
+    el.innerHTML = `
+      <div class="compare-row">
+        <span class="compare-label">เดือนนี้</span>
+        <div class="compare-bar-bg"><div class="compare-bar-fill" style="width:${Math.min(100,(sumKwh/maxVal)*100)}%; background:var(--on-color);"></div></div>
+        <span class="compare-val">${sumKwh.toFixed(2)} kWh</span>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">เดือนก่อน</span>
+        <div class="compare-bar-bg"><div class="compare-bar-fill" style="width:${Math.min(100,(prevSum/maxVal)*100)}%; background:var(--off-color);"></div></div>
+        <span class="compare-val">${prevSum.toFixed(2)} kWh</span>
+      </div>
+      <div class="compare-delta" style="color:${diffColor};">→ ${diffText} (ค่าไฟประมาณ ${curCost.toFixed(2)} บาท เทียบกับ ${prevCost.toFixed(2)} บาท)</div>
+    `;
   }
 
   function updateBudget() { renderMonthBars(); } // ใช้ฟังก์ชันเดียวกัน เพราะงบผูกอยู่กับกราฟเดือน
@@ -1113,12 +1426,12 @@
     }
     const centerVal = document.createElementNS(svgNS,"text");
     centerVal.setAttribute("x",cx); centerVal.setAttribute("y",cy-4); centerVal.setAttribute("text-anchor","middle");
-    centerVal.setAttribute("font-size","14"); centerVal.setAttribute("font-family","monospace"); centerVal.setAttribute("fill","#EDEFF2"); centerVal.setAttribute("font-weight","600");
+    centerVal.setAttribute("font-size","14"); centerVal.setAttribute("font-family","monospace"); centerVal.setAttribute("fill",cssVar('--text-primary')); centerVal.setAttribute("font-weight","600");
     centerVal.textContent = total.toFixed(2);
     svg.appendChild(centerVal);
     const centerLabel = document.createElementNS(svgNS,"text");
     centerLabel.setAttribute("x",cx); centerLabel.setAttribute("y",cy+12); centerLabel.setAttribute("text-anchor","middle");
-    centerLabel.setAttribute("font-size","9"); centerLabel.setAttribute("font-family","monospace"); centerLabel.setAttribute("fill","#8B94A0");
+    centerLabel.setAttribute("font-size","9"); centerLabel.setAttribute("font-family","monospace"); centerLabel.setAttribute("fill",cssVar('--text-dim'));
     centerLabel.textContent = "kWh วันนี้";
     svg.appendChild(centerLabel);
     box.appendChild(svg);
@@ -1217,14 +1530,18 @@
     a.click();
   }
 
+  loadTheme();
   loadConfig();
   loadGeoConfig();
+  pullGeoRulesFromBridge();
   loadHistory();
+  loadDeviceTimers();
   renderTodayBars();
   renderMonthBars();
   renderDeviceDonut();
   renderRankings();
   updateEnergyAdvice();
+  renderAlerts();
 </script>
 </body>
 </html>
