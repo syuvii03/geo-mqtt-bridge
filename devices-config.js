@@ -12,7 +12,7 @@
 const DEVICE_NAMES = {
   aircon: "แอร์",
   light: "ไฟในบ้าน",
-  light2: "ไฟนอกบ้าน",
+  light2: "ไฟหน้าบ้าน",
   fan: "พัดลม",
   plug: "ปลั๊กไฟทั่วไป"
 };
