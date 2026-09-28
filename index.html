@@ -550,10 +550,12 @@
 
     if (parts.length === 3 && parts[2] === 'state') {
       const id = parts[1];
-      if (devices[id]) {
-        devices[id].state = (message === "ON");
-        renderBreakers();
+      // สร้างการ์ดอุปกรณ์จากข้อความ state (retained) ได้เลย ไม่ต้องรอ telemetry ก่อน
+      if (!devices[id]) {
+        devices[id] = { name: DEVICE_NAMES[id] || id, watt: 0, state: false, kwh: 0 };
       }
+      devices[id].state = (message === "ON");
+      renderBreakers();
     }
   }
 
