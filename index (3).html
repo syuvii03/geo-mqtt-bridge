@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แผงควบคุมไฟฟ้า (MQTT)</title>
+<style>
+  :root {
+    --bg: #F6F7F9; --panel: #FFFFFF; --panel-alt: #EEF1F4; --panel-raised: #FFFFFF;
+    --on-color: #0D9488; --on-glow: rgba(13, 148, 136, 0.25); --off-color: #9CA3AF;
+    --warn-color: #EA580C; --danger-color: #DC2626; --danger-glow: rgba(220, 38, 38, 0.35);
+    --text-primary: #1F2933; --text-secondary: #5B6472;
+    --text-dim: #9AA3AF; --border: #E3E6EB; --border-light: #D3D8DF; --thumb-off: #6B7280;
+  }
+  /* ธีมมืด: สลับได้จากปุ่มที่มุมขวาบน ค่าที่จำไว้เก็บใน localStorage */
+  body.theme-dark {
+    --bg: #0B0E11; --panel: #151A20; --panel-alt: #1B2229; --panel-raised: #1F2730;
+    --on-color: #5EEAD4; --on-glow: rgba(94, 234, 212, 0.45); --off-color: #4B5563;
+    --warn-color: #FF8A5B; --danger-color: #F87171; --danger-glow: rgba(248, 113, 113, 0.4);
+    --text-primary: #EDEFF2; --text-secondary: #8B94A0;
+    --text-dim: #565F6B; --border: #242C35; --border-light: #313B47; --thumb-off: #6B7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh; padding: 20px 16px 60px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .title-block .eyebrow { font-family: monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+  .title-block h1 { font-size: 24px; font-weight: 700; }
+  .conn-status { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; background: var(--panel); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--off-color); }
+  .dot.live { background: var(--on-color); box-shadow: 0 0 8px var(--on-glow); }
+
+  .config-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .config-panel label { font-family: monospace; font-size: 11px; color: var(--text-secondary); }
+  .config-panel input { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-primary); font-family: monospace; font-size: 13px; padding: 6px 10px; border-radius: 6px; flex: 1; min-width: 140px; }
+  .btn-connect { background: var(--panel-raised); border: 1px solid var(--border-light); color: var(--text-primary); font-weight: 600; font-size: 12px; padding: 7px 14px; border-radius: 6px; cursor: pointer; }
+  .btn-connect:hover { border-color: var(--on-color); color: var(--on-color); }
+  .config-hint { font-family: monospace; font-size: 10px; color: var(--text-dim); width: 100%; }
+  .config-panel input[type="checkbox"] { flex: none; width: 16px; height: 16px; min-width: 0; accent-color: var(--on-color); cursor: pointer; }
+  .config-panel input[type="number"] { flex: none; }
+  .geo-check-label { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; color: var(--text-secondary); cursor: pointer; flex: none; }
+  .geo-status { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .auto-check-label { display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 10px; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); cursor: pointer; }
+  .auto-check-label input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--on-color); cursor: pointer; }
+
+  .cost-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .cost-item { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+  .cost-label { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+  .cost-value { font-family: monospace; font-size: 24px; font-weight: 600; }
+  .cost-value.accent { color: var(--on-color); }
+
+  .chart-card { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+  .chart-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
+  .chart-box { width: 100%; height: 180px; background: var(--panel-alt); border-radius: 8px; border: 1px solid var(--border-light); position: relative; }
+  svg { width: 100%; height: 100%; overflow: visible; }
+  .chart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .chart-fill { stroke: none; }
+  .chart-dot { filter: drop-shadow(0 0 3px currentColor); }
+  .grid-line { stroke: var(--border); stroke-dasharray: 4,4; stroke-width: 1; }
+  .chart-axis { position: absolute; left: 8px; top: 0; right: 0; height: 100%; pointer-events: none; }
+  .chart-axis span { position: absolute; left: 0; transform: translateY(-50%); font-family: monospace; font-size: 10px; color: var(--text-dim); }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+  .chart-legend-item { display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 11px; color: var(--text-secondary); }
+  .chart-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .chart-legend-val { color: var(--text-primary); font-weight: 600; }
+
+  .rack-label { font-family: monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; margin: 12px 0 8px; }
+  .breaker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .breaker { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: border-color 0.25s; }
+  .breaker.is-on { border-color: rgba(13,148,136,0.4); }
+  .breaker-top { display: flex; justify-content: space-between; margin-bottom: 14px; }
+  .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); }
+  .breaker-name { font-size: 16px; font-weight: 600; }
+  .led { width: 10px; height: 10px; border-radius: 50%; background: var(--off-color); }
+  .breaker.is-on .led { background: var(--on-color); box-shadow: 0 0 10px var(--on-glow); }
+
+  .breaker-mid { display: flex; align-items: center; justify-content: space-between; }
+  .status-text { font-family: monospace; font-size: 12px; color: var(--text-secondary); }
+  .breaker.is-on .status-text { color: var(--on-color); }
+  .switch-track { width: 44px; height: 72px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 4px; cursor: pointer; }
+  .switch-track.disabled { cursor: not-allowed; opacity: 0.5; }
+  .switch-thumb { width: 34px; height: 32px; background: var(--thumb-off); border-radius: 6px; transition: transform 0.2s ease; }
+  .switch-track.on .switch-thumb { transform: translateY(30px); background: #0D9488; box-shadow: 0 0 10px var(--on-glow); }
+
+  .device-cost { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-family: monospace; font-size: 12px; }
+
+  .util-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .util-btn { background: transparent; border: 1px dashed var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 11px; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+  .util-btn:hover { border-color: var(--on-color); color: var(--on-color); }
+
+  .history-card { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+  .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .history-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .history-tab { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 11px; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+  .history-tab.active { background: var(--on-color); color: var(--bg); font-weight: 600; }
+
+  .period-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .period-card { background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 11px; }
+
+  .month-config-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; font-family: monospace; font-size: 12px; flex-wrap: wrap; }
+  .month-config-row input { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-primary); padding: 4px 8px; border-radius: 4px; }
+
+  .budget-bar-wrap { margin: 12px 0 4px; }
+  .budget-bar-track { height: 10px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 5px; overflow: hidden; }
+  .budget-bar-fill { height: 100%; background: var(--on-color); transition: width 0.4s ease, background 0.4s ease; }
+  .budget-bar-fill.warn { background: var(--warn-color); }
+  .budget-bar-label { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-top: 6px; }
+
+  .donut-wrap { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .donut-legend-row { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; margin-bottom: 8px; }
+  .donut-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  .rank-item { margin-bottom: 12px; font-family: monospace; font-size: 12px; }
+  .rank-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .rank-bar-bg { width: 100%; height: 8px; background: var(--panel-alt); border-radius: 4px; overflow: hidden; }
+  .rank-bar-fill { height: 100%; background: var(--on-color); border-radius: 4px; }
+
+  .bar-chart-svg { width: 100%; height: 160px; margin-top: 12px; }
+  rect.bar { fill: var(--on-color); opacity: 0.7; rx: 3px; }
+  rect.bar.peak { fill: var(--warn-color) !important; opacity: 1 !important; }
+
+  .advice-box { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 13px; line-height: 1.6; }
+  .advice-eyebrow { font-family: monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; }
+  .advice-text { color: var(--on-color); transition: color 0.3s ease; }
+
+  footer { margin-top: 24px; font-family: monospace; font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+  footer code { background: var(--panel); padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); }
+
+  .theme-toggle { background: var(--panel); border: 1px solid var(--border); color: var(--text-secondary); font-size: 16px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .theme-toggle:hover { border-color: var(--on-color); color: var(--on-color); }
+
+  .alert-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .alert-banner { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5; border: 1px solid; }
+  .alert-banner.warn { background: rgba(234, 88, 12, 0.1); border-color: var(--warn-color); color: var(--warn-color); }
+  .alert-banner.danger { background: rgba(220, 38, 38, 0.1); border-color: var(--danger-color); color: var(--danger-color); }
+  .alert-icon { font-size: 18px; flex-shrink: 0; }
+
+  .quick-actions-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .btn-danger { background: var(--danger-color); border: 1px solid var(--danger-color); color: #fff; font-weight: 700; font-size: 13px; padding: 10px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 0 0 rgba(0,0,0,0); }
+  .btn-danger:hover { filter: brightness(1.08); box-shadow: 0 0 10px var(--danger-glow); }
+  .btn-scene { background: var(--panel-raised); border: 1px solid var(--border-light); color: var(--text-primary); font-weight: 600; font-size: 13px; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+  .btn-scene:hover { border-color: var(--on-color); color: var(--on-color); }
+
+  .timer-row { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+  .timer-label { font-family: monospace; font-size: 10px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; }
+  .timer-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .timer-btn { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 10px; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
+  .timer-btn:hover { border-color: var(--on-color); color: var(--on-color); }
+  .timer-active { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: monospace; font-size: 11px; color: var(--warn-color); }
+  .timer-cancel { background: transparent; border: 1px solid var(--border-light); color: var(--text-secondary); font-size: 10px; padding: 3px 8px; border-radius: 5px; cursor: pointer; }
+  .timer-cancel:hover { border-color: var(--danger-color); color: var(--danger-color); }
+
+  .compare-wrap { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .compare-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: monospace; font-size: 12px; }
+  .compare-bar-bg { flex: 1; height: 16px; background: var(--panel-alt); border-radius: 4px; overflow: hidden; }
+  .compare-bar-fill { height: 100%; border-radius: 4px; }
+  .compare-label { width: 92px; flex-shrink: 0; color: var(--text-secondary); }
+  .compare-val { width: 110px; flex-shrink: 0; text-align: right; }
+  .compare-delta { margin-top: 4px; font-family: monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title-block">
+      <div class="eyebrow">HOME AUTOMATION / MQTT</div>
+      <h1>แผงควบคุมไฟฟ้า</h1>
+    </div>
+    <div class="conn-status">
+      <span class="dot" id="connDot"></span>
+      <span id="connText">ยังไม่ได้เชื่อมต่อ</span>
+    </div>
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">🌙</button>
+  </header>
+
+  <div class="alert-stack" id="alertStack"></div>
+
+  <div class="config-panel">
+    <label>ค่าไฟ (บาท/หน่วย)</label>
+    <input id="cfgRate" type="number" step="0.01" value="4.40" style="max-width:80px;">
+    <button class="btn-connect" id="btnConnect" onclick="handleConnectClick()">เชื่อมต่อ</button>
+    <div class="config-hint">ค่าเชื่อมต่อ (Broker Host/Username/Password/Prefix) ถูกฝังไว้ใน DEFAULT_CONFIG ที่ต้นไฟล์แล้ว แก้ไขได้ที่นั่น กดปุ่ม "เชื่อมต่อ" เพื่อเริ่มใช้งาน</div>
+  </div>
+
+  <div class="config-panel" id="geoPanel">
+    <label>ตำแหน่งบอร์ด (Lat)</label>
+    <input id="geoLat" type="text" placeholder="13.756300" style="max-width:120px;" onchange="onGeoLatLngChange()">
+    <label>ตำแหน่งบอร์ด (Lng)</label>
+    <input id="geoLng" type="text" placeholder="100.501800" style="max-width:120px;" onchange="onGeoLatLngChange()">
+    <button class="btn-connect" onclick="useCurrentLocationAsBoard()">📍 ใช้ตำแหน่งปัจจุบันเป็นตำแหน่งบอร์ด</button>
+    <label class="geo-check-label">
+      <input id="geoEnabled" type="checkbox" onchange="onGeoEnabledChange()">
+      เปิดใช้งานเปิด/ปิดอัตโนมัติตามระยะ
+    </label>
+    <a class="btn-connect" href="geo-settings.html" target="_blank" rel="noopener" style="text-decoration:none;">⚙️ ตั้งค่ากฎเปิด/ปิดตามระยะ</a>
+    <span class="geo-status" id="geoRuleCount"></span>
+    <div class="config-hint">กำหนดได้เองว่าอุปกรณ์ไหนเปิด/ปิดที่ระยะกี่เมตร ทั้งตอน "เข้ามาในระยะ" และ "ออกเกินระยะ" ที่หน้า "ตั้งค่ากฎเปิด/ปิดตามระยะ" (เปิดในแท็บใหม่ บันทึกแล้วมีผลทันทีที่แท็บนี้) • ต้องกดยอมรับให้เว็บนี้เข้าถึงตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน • Geolocation อาจใช้ไม่ได้ถ้าเปิดไฟล์ผ่าน file:// โดยตรงในบางเบราว์เซอร์ ลองรันผ่าน localhost หรือ HTTPS หากอ่านตำแหน่งไม่ได้ • กฎชุดนี้ใช้ร่วมกับระบบ IFTTT พื้นหลัง (geo-trigger.js) ด้วยแล้ว ถ้ากดบันทึกกฎที่หน้าตั้งค่าไว้ (ซิงค์ขึ้นฐานข้อมูล) หน้านี้จะดึงกฎล่าสุดมาใช้ตอนเปิดหน้าโดยอัตโนมัติ</div>
+  </div>
+
+  <div class="config-panel" id="dbPanel">
+    <button class="btn-connect" onclick="connectHistoryDb()">เชื่อมต่อฐานข้อมูล</button>
+    <div class="config-hint">ค่า History API URL / Token ถูกฝังไว้ใน DEFAULT_CONFIG ที่ต้นไฟล์แล้ว แก้ไขได้ที่นั่น กดปุ่มนี้เพื่อให้กราฟย้อนหลัง (รายชั่วโมง/รายวัน/สัดส่วนอุปกรณ์) ซิงค์ข้ามเครื่อง/มือถือ • ถ้าไม่กด ระบบจะยังเก็บกราฟไว้ในเบราว์เซอร์นี้เครื่องเดียวเหมือนเดิม • ส่วน "กฎเปิด/ปิดตามระยะ" ซิงค์กับฐานข้อมูลอัตโนมัติอยู่แล้วทุกครั้งที่เปิดหน้า (ไม่ต้องกดปุ่มนี้)</div>
+    <div style="font-family:monospace; font-size:11px; color:var(--text-dim); margin-top:4px;" id="histSyncStatus"></div>
+  </div>
+
+  <div class="quick-actions-row">
+    <button class="btn-danger" onclick="killSwitch()">🚨 ปิดทุกอย่างฉุกเฉิน</button>
+    <button class="btn-scene" onclick="sceneComeHome()">🏠 กลับบ้าน (ทำตามกฎ "เข้ามาในระยะ" ทั้งหมด)</button>
+    <button class="btn-scene" onclick="sceneLeaveHome()">🚪 ออกจากบ้าน (ทำตามกฎ "ออกเกินระยะ" ทั้งหมด)</button>
+  </div>
+
+  <div class="cost-summary">
+    <div class="cost-item">
+      <div class="cost-label">พลังงานรวม (ตั้งแต่บอร์ดล่าสุดรีสตาร์ท)</div>
+      <div class="cost-value" id="totalKwh">0.000 kWh</div>
+    </div>
+    <div class="cost-item">
+      <div class="cost-label">ค่าไฟรวมโดยประมาณ</div>
+      <div class="cost-value accent" id="totalCost">฿0.00</div>
+    </div>
+    <div class="cost-item">
+      <div class="cost-label">ระยะห่างจากบอร์ด</div>
+      <div class="cost-value" id="geoDistance">--</div>
+      <div class="geo-status" id="geoStatus">ยังไม่ได้เปิดใช้งาน</div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-head">
+      <span>การใช้พลังงานแบบเรียลไทม์ (วัตต์)</span>
+      <span style="font-size:11px; color:var(--on-color);" id="liveTag">● LIVE</span>
+    </div>
+    <div class="chart-box">
+      <svg id="svgChart" viewBox="0 0 500 180" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="grad0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D9488" stop-opacity="0.35"/><stop offset="100%" stop-color="#0D9488" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EA580C" stop-opacity="0.35"/><stop offset="100%" stop-color="#EA580C" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7DD3FC" stop-opacity="0.35"/><stop offset="100%" stop-color="#7DD3FC" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C4B5FD" stop-opacity="0.35"/><stop offset="100%" stop-color="#C4B5FD" stop-opacity="0"/></linearGradient>
+        </defs>
+        <line x1="0" y1="20" x2="500" y2="20" class="grid-line" />
+        <line x1="0" y1="70" x2="500" y2="70" class="grid-line" />
+        <line x1="0" y1="120" x2="500" y2="120" class="grid-line" />
+        <line x1="0" y1="170" x2="500" y2="170" class="grid-line" />
+        <g id="chartFills"></g>
+        <g id="chartLines"></g>
+        <g id="chartDots"></g>
+      </svg>
+      <div class="chart-axis">
+        <span style="top:11.1%">1500W</span>
+        <span style="top:38.9%">1000W</span>
+        <span style="top:66.7%">500W</span>
+        <span style="top:94.4%">0W</span>
+      </div>
+    </div>
+    <div class="chart-legend" id="chartLegend"></div>
+  </div>
+
+  <div class="history-card">
+    <div class="history-head">
+      <div style="font-weight:600; font-size:14px;">ประวัติการใช้ไฟ</div>
+      <div class="history-tabs">
+        <button class="history-tab active" id="tabToday" onclick="switchHistTab('today')">วันนี้</button>
+        <button class="history-tab" id="tabMonth" onclick="switchHistTab('month')">รายเดือน</button>
+        <button class="history-tab" onclick="exportHistoryCsv()">⬇ CSV</button>
+      </div>
+    </div>
+
+    <!-- แท็บ วันนี้ -->
+    <div id="todayView">
+      <div style="font-family:monospace; font-size:11px; color:var(--warn-color); margin-bottom:4px;" id="peakText">ช่วงพีคของวันนี้: -</div>
+      <div style="font-family:monospace; font-size:12px; color:var(--text-secondary);" id="todayTotalText">รวมวันนี้: 0.000 kWh · ฿0.00</div>
+
+      <div class="period-cards">
+        <div class="period-card">เช้า (06-12)<br><span id="p1" style="color:var(--on-color);">0.000 kWh</span></div>
+        <div class="period-card">บ่าย-เย็น (12-18)<br><span id="p2" style="color:var(--on-color);">0.000 kWh</span></div>
+        <div class="period-card">ค่ำ (18-22)<br><span id="p3" style="color:var(--on-color);">0.000 kWh</span></div>
+        <div class="period-card">กลางคืน (22-06)<br><span id="p4" style="color:var(--on-color);">0.000 kWh</span></div>
+      </div>
+
+      <div style="font-family:monospace; font-size:12px; font-weight:600; margin: 16px 0 8px;">การใช้ไฟรายชั่วโมง (วันนี้)</div>
+      <div class="bar-chart-svg"><svg viewBox="0 0 500 150" id="todayBarSvg"></svg></div>
+
+      <div style="font-family:monospace; font-size:12px; font-weight:600; margin: 20px 0 10px;">สัดส่วนการใช้ไฟแต่ละอุปกรณ์ (วันนี้)</div>
+      <div class="donut-wrap">
+        <div id="deviceDonut"></div>
+        <div id="donutLegend" style="flex:1; min-width:150px;"></div>
+      </div>
+
+      <div style="font-family:monospace; font-size:12px; font-weight:600; margin: 20px 0 10px;">อันดับอุปกรณ์กินไฟสูงสุด (วันนี้)</div>
+      <div id="rankList"></div>
+    </div>
+
+    <!-- แท็บ รายเดือน -->
+    <div id="monthView" style="display:none;">
+      <div class="month-config-row">
+        <span>เดือน</span>
+        <input type="month" id="monthPicker" onchange="renderMonthBars()">
+        <span>งบ/เดือน (บาท)</span>
+        <input type="number" id="budgetInput" placeholder="เช่น 2000" oninput="onBudgetChange()" style="width:100px;">
+      </div>
+
+      <div style="font-family:monospace; font-size:12px; line-height:1.6;">
+        <div>รวมเดือนนี้: <b id="mKwh">0.00</b> kWh · <b id="mCost">฿0.00</b></div>
+        <div style="color:var(--text-secondary);">พยากรณ์ค่าไฟสิ้นเดือน: ประมาณ <b id="forecastVal">฿0.00</b></div>
+      </div>
+
+      <div class="budget-bar-wrap" id="budgetWrap" style="display:none;">
+        <div class="budget-bar-track"><div class="budget-bar-fill" id="budgetFill" style="width:0%;"></div></div>
+        <div class="budget-bar-label" id="budgetLabel">0.00 / 0.00 บาท (0%)</div>
+      </div>
+
+      <div class="bar-chart-svg"><svg viewBox="0 0 500 150" id="monthBarSvg"></svg></div>
+
+      <div class="compare-wrap">
+        <div style="font-family:monospace; font-size:12px; font-weight:600; margin-bottom:10px;">เทียบกับเดือนก่อนหน้า</div>
+        <div id="monthCompare"></div>
+      </div>
+    </div>
+
+    <div class="advice-box">
+      <div class="advice-eyebrow">แนวทางประหยัดไฟ</div>
+      <div id="adviceText" class="advice-text">→ กำลังวิเคราะห์ข้อมูลการใช้งาน...</div>
+    </div>
+  </div>
+
+  <div class="rack-label">อุปกรณ์</div>
+  <div class="breaker-grid" id="breakerGrid">
+    <div style="font-family:monospace; font-size:12px; color:var(--text-dim);">กรอกข้อมูล broker ด้านบนแล้วกด "เชื่อมต่อ" เพื่อแสดงอุปกรณ์</div>
+  </div>
+
+  <div class="util-row">
+    <button class="util-btn" onclick="exportCsv()">⬇ ส่งออก CSV</button>
+  </div>
+
+  <footer>
+    Topic ควบคุม: <code id="footCtrl">-</code><br>
+    Topic สถานะรวม: <code id="footStatus">-</code><br>
+    หมายเหตุ: อุปกรณ์และกำลังไฟ (วัตต์) ถูกกำหนดไว้ในโค้ด ESP32 โดยตรง หน้าเว็บนี้จะแสดงอุปกรณ์ตามที่ ESP32 ส่งข้อมูล telemetry เข้ามาเท่านั้น
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+<script src="devices-config.js"></script>
+<script>
+  // ---------- ตั้งค่าทั่วไป ----------
+  // ---------- ค่าเชื่อมต่อที่ฝังไว้ในโค้ด (กรอกครั้งเดียวตรงนี้ ไม่ต้องพิมพ์ในหน้าเว็บอีก) ----------
+  // ⚠️ คำเตือนความปลอดภัย: ค่าทุกตัวด้านล่าง โดยเฉพาะ pass และ histToken จะถูกเก็บเป็น
+  // ข้อความธรรมดา (plain text) อยู่ในไฟล์นี้ ใครก็ตามที่เปิดไฟล์นี้ดู หรือกด "View Source"
+  // จะเห็นรหัสผ่าน/token ได้ทันที ห้ามอัปโหลดไฟล์นี้ (ที่กรอกค่าแล้ว) ขึ้น GitHub/เว็บ public
+  // หรือส่งต่อให้คนอื่น ใช้เก็บไว้เปิดจากเครื่อง/มือถือของตัวเองเท่านั้น
+  // เว้นค่าไหนเป็น "" ไว้ได้ตามปกติ ถ้าอยากพิมพ์เองในหน้าเว็บเหมือนเดิม
+  const DEFAULT_CONFIG = {
+    host: "a130eedbb798414f983f14f784934179.s1.eu.hivemq.cloud",
+    port: "8884",
+    user: "esp32",
+    pass: "25022005",
+    prefix: "myhome",
+    rate: 4.40,
+    histUrl: "https://geo-mqtt-bridge.vercel.app",
+    histToken: "mysmarthome",  // TRIGGER_TOKEN เดียวกับที่ตั้งในโปรเจกต์ geo-mqtt-bridge
+    maxWatt: 1500,             // ถ้ากำลังไฟรวมที่เปิดอยู่ ณ ขณะนั้นเกินค่านี้ (วัตต์) จะขึ้นแจ้งเตือนกันเบรกเกอร์ตัด/ไฟเกิน
+    staleTelemetrySec: 20      // ถ้าไม่มีข้อมูล telemetry จากบอร์ดเข้ามาเกินกี่วินาที ให้ถือว่าบอร์ดอาจหลุด/ไม่ทราบสถานะจริง
+  };
+
+  let rate = 4.40;
+  let prefix = "myhome";
+  let client = null;
+  let connected = false;
+
+  // devices[id] = { name, watt, state, kwh }
+  let devices = {};
+  const COLORS = ['#0D9488', '#EA580C', '#0284C7', '#7C3AED'];
+  // หมายเหตุ: DEVICE_NAMES มาจาก devices-config.js (ไฟล์เดียวกับที่ geo-settings.html ใช้)
+  // เพื่อกันไม่ให้รายชื่ออุปกรณ์ของสองหน้าเว็บไม่ตรงกัน — ถ้าจะเพิ่ม/แก้อุปกรณ์ แก้ที่ devices-config.js
+
+  let historyData = {}; // สำหรับกราฟเรียลไทม์ (เก็บย้อนหลัง 30 จุด ต่ออุปกรณ์)
+
+  // ---------- แจ้งเตือนความปลอดภัย: บอร์ดหลุดการเชื่อมต่อ / ใช้ไฟเกิน ----------
+  let lastTelemetryAt = 0; // เวลาล่าสุด (ms) ที่ได้รับ telemetry จากบอร์ดจริงๆ
+
+  // ---------- ตั้งเวลาปิดอัตโนมัติรายอุปกรณ์ (Sleep Timer) ----------
+  const TIMER_KEY = "mqtt_dashboard_timers";
+  let deviceTimers = {}; // { [id]: endAt(ms) }
+  let timerTickHandle = null;
+
+  // ---------- ธีมสว่าง/มืด ----------
+  const THEME_KEY = "mqtt_dashboard_theme";
+
+
+  // ---------- ระบบเปิด/ปิดอัตโนมัติตามระยะห่าง (Geofencing) แบบกำหนดกฎเองได้ ----------
+  // กฎแต่ละข้อ (geoRules) = { id, deviceId, distanceM, direction: 'enter'|'leave', action: 'on'|'off' }
+  // แก้ไขกฎได้ที่หน้า geo-settings.html — หน้านี้แค่ "อ่าน" กฎมาทำงานตามระยะจริงที่วัดได้
+  let geoLat = null, geoLng = null, geoEnabled = false;
+  let geoRules = [];
+  let geoWatchId = null;
+  let lastAutoActionAt = 0;
+  const GEO_COOLDOWN_MS = 10000;   // กันสั่งเปิด/ปิดถี่เกินไป
+  const GEO_HYSTERESIS_M = 15;     // ระยะกันชนกัน GPS แกว่งแล้วสวิตช์รัว
+  let distanceBuffer = [];         // เก็บระยะล่าสุดไว้หาค่ามัธยฐาน (กรอง spike)
+  const GEO_BUFFER_SIZE = 5;
+  const GEO_MAX_ACCURACY_M = 100;  // ทิ้งค่าที่ GPS ไม่แม่นยำเกินนี้ (เมตร)
+  const GEO_CONFIRM_COUNT = 3;     // ต้องยืนยันกี่ครั้งติดกันก่อนสั่งเปลี่ยนสถานะจริง
+
+  // สถานะฝั่ง (ใน/นอก) ของแต่ละ "ระยะ" ที่ถูกใช้ในกฎ พร้อมตัวช่วยยืนยัน (กันค่า GPS กระโดด/แกว่ง)
+  // เก็บเป็น map แยกตามค่าระยะ (เมตร) เพราะกฎหลายข้ออาจใช้ระยะเดียวกัน ควรใช้ tracker เดียวกัน
+  function makeBoundaryTracker() { return { side: null, pending: null, streak: 0 }; }
+  let boundaryTrackers = {}; // { [distanceM]: tracker }
+
+  function distinctRuleDistances() {
+    return [...new Set(geoRules.map(r => Number(r.distanceM)))].filter(d => d > 0);
+  }
+
+  function rebuildBoundaryTrackers() {
+    boundaryTrackers = {};
+    distinctRuleDistances().forEach(d => { boundaryTrackers[d] = makeBoundaryTracker(); });
+  }
+
+  // ---------- อ่านค่าสี CSS variable ปัจจุบัน (เปลี่ยนตามธีมสว่าง/มืดอัตโนมัติ) ----------
+  function cssVar(name) {
+    return getComputedStyle(document.body).getPropertyValue(name).trim();
+  }
+
+  // ---------- โหลด/บันทึกค่า config จาก localStorage ----------
+  function loadConfig() {
+    const saved = localStorage.getItem("mqtt_dashboard_config");
+    let cfg = {};
+    if (saved) {
+      try { cfg = JSON.parse(saved); } catch (e) { cfg = {}; }
+    }
+    // ค่าเชื่อมต่อ (host/port/user/pass/prefix/histUrl/histToken) มาจาก DEFAULT_CONFIG โดยตรงแล้ว
+    // เหลือแค่ "ค่าไฟ" ที่ยังปรับได้จากหน้าเว็บและจำไว้ใน localStorage
+    document.getElementById("cfgRate").value = cfg.rate || DEFAULT_CONFIG.rate || 4.40;
+    prefix = DEFAULT_CONFIG.prefix || "myhome";
+  }
+
+  function saveConfig() {
+    const cfg = {
+      rate: document.getElementById("cfgRate").value
+    };
+    localStorage.setItem("mqtt_dashboard_config", JSON.stringify(cfg));
+  }
+
+
+  function setConnected(isConnected) {
+    connected = isConnected;
+    const dot = document.getElementById("connDot");
+    const text = document.getElementById("connText");
+    dot.classList.toggle("live", isConnected);
+    text.textContent = isConnected ? "เชื่อมต่อ MQTT Broker แล้ว" : "ไม่ได้เชื่อมต่อ";
+    document.getElementById("btnConnect").textContent = isConnected ? "ตัดการเชื่อมต่อ" : "เชื่อมต่อ";
+  }
+
+  // ---------- ปุ่มเชื่อมต่อ / ตัดการเชื่อมต่อ ----------
+  function handleConnectClick() {
+    if (connected) {
+      if (client) client.end(true);
+      setConnected(false);
+      return;
+    }
+    connectMqtt();
+  }
+
+  function connectMqtt() {
+    const host = (DEFAULT_CONFIG.host || "").trim();
+    const port = (DEFAULT_CONFIG.port || "8884").trim();
+    const user = (DEFAULT_CONFIG.user || "").trim();
+    const pass = (DEFAULT_CONFIG.pass || "").trim();
+    prefix = (DEFAULT_CONFIG.prefix || "myhome").trim();
+    rate = parseFloat(document.getElementById("cfgRate").value) || 4.40;
+
+    if (!host || !user || !pass) {
+      alert("ยังไม่ได้ตั้งค่า Broker Host / Username / Password ใน DEFAULT_CONFIG ที่ต้นไฟล์ (ในส่วน <script>)");
+      return;
+    }
+
+    saveConfig();
+
+    // HiveMQ Cloud ใช้ WebSocket แบบ wss:// ผ่าน path /mqtt
+    const url = `wss://${host}:${port}/mqtt`;
+
+    client = mqtt.connect(url, {
+      username: user,
+      password: pass,
+      clean: true,
+      reconnectPeriod: 3000,
+      connectTimeout: 8000
+    });
+
+    client.on('connect', () => {
+      setConnected(true);
+      client.subscribe(`${prefix}/telemetry`);
+      client.subscribe(`${prefix}/+/state`);
+      document.getElementById("footCtrl").textContent = `${prefix}/<device>/set`;
+      document.getElementById("footStatus").textContent = `${prefix}/telemetry`;
+    });
+
+    client.on('reconnect', () => setConnected(false));
+    client.on('close', () => setConnected(false));
+    client.on('error', (err) => {
+      console.error("MQTT error:", err);
+      setConnected(false);
+      // ถ้าโดนปฏิเสธเพราะ auth/permission ผิด ให้หยุดเชื่อมต่อทันที
+      // ไม่ปล่อยให้ reconnect ยิงซ้ำรัวๆ ทุก 3 วิ จนโบรกเกอร์บล็อกชั่วคราว
+      const msg = (err && err.message) || "";
+      if (msg.includes("Not authorized") || msg.includes("Bad username or password") || msg.includes("not authorized")) {
+        client.end(true);
+        alert("เชื่อมต่อไม่สำเร็จ: Not authorized\nกรุณาตรวจสอบ Username/Password และสถานะ Broker อีกครั้ง");
+      }
+    });
+
+    client.on('message', (topic, payload) => {
+      handleMessage(topic, payload.toString());
+    });
+  }
+
+  // ---------- จัดการข้อความที่ได้รับจาก MQTT ----------
+  function handleMessage(topic, message) {
+    const parts = topic.split('/');
+
+    if (parts.length === 2 && parts[1] === 'telemetry') {
+      try {
+        const data = JSON.parse(message);
+        lastTelemetryAt = Date.now();
+        Object.keys(data).forEach(key => {
+          if (key === 'totalKwh') return;
+          const d = data[key];
+          if (!devices[key]) {
+            devices[key] = { name: DEVICE_NAMES[key] || key, watt: d.watt, state: d.state, kwh: d.kwh };
+          } else {
+            devices[key].watt = d.watt;
+            if (!(pendingUntil[key] && Date.now() < pendingUntil[key])) devices[key].state = d.state;
+            devices[key].kwh = d.kwh;
+          }
+        });
+        renderBreakers();
+        renderCostSummary(data.totalKwh || 0);
+        updateChartHistory();
+        renderAlerts(); // เช็คใช้ไฟเกิน/บอร์ดหลุดใหม่ทุกครั้งที่มีข้อมูลเข้า
+        recordHistoryDelta(); // บันทึกส่วนต่างพลังงานลง localStorage สำหรับกราฟรายวัน/รายเดือน
+      } catch (e) {
+        console.error("แปลง telemetry JSON ไม่สำเร็จ:", e);
+      }
+      return;
+    }
+
+    if (parts.length === 3 && parts[2] === 'state') {
+      const id = parts[1];
+      // สร้างการ์ดอุปกรณ์จากข้อความ state (retained) ได้เลย ไม่ต้องรอ telemetry ก่อน
+      if (!devices[id]) {
+        devices[id] = { name: DEVICE_NAMES[id] || id, watt: 0, state: false, kwh: 0 };
+      }
+      devices[id].state = (message === "ON");
+      delete pendingUntil[id]; // ESP32 ยืนยันแล้ว
+      renderBreakers();
+    }
+  }
+
+  // ---------- ส่งคำสั่งเปิด/ปิด ----------
+  const pendingUntil = {}; // { [id]: ms } ช่วงที่เพิ่งสั่ง ให้ข้าม telemetry เก่าที่ยังไม่สะท้อนคำสั่ง
+  function toggleDevice(id) {
+    if (!client || !client.connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker กรุณากด "เชื่อมต่อ" ก่อน'); return; }
+    if (!devices[id]) return;
+    const newState = !devices[id].state;
+    devices[id].state = newState;
+    pendingUntil[id] = Date.now() + 5000;
+    if (!newState) clearDeviceTimer(id, false);
+    renderBreakers();
+    client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF", { qos: 0, retain: false }, (err) => {
+      if (err) { console.error("publish ไม่สำเร็จ:", err); alert("ส่งคำสั่งไม่สำเร็จ: " + err.message); }
+    });
+  }
+
+  // ---------- วาดการ์ดอุปกรณ์ ----------
+  let pressingSwitch = false, renderDeferred = false;
+  document.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".switch-track")) pressingSwitch = true; });
+  ["pointerup", "pointercancel"].forEach(ev => document.addEventListener(ev, () => {
+    if (!pressingSwitch) return;
+    setTimeout(() => { pressingSwitch = false; if (renderDeferred) { renderDeferred = false; renderBreakers(); } }, 50);
+  }));
+
+  function renderBreakers() {
+    if (pressingSwitch) { renderDeferred = true; return; }
+    const grid = document.getElementById("breakerGrid");
+    const ids = Object.keys(devices);
+    if (ids.length === 0) {
+      grid.innerHTML = `<div style="font-family:monospace; font-size:12px; color:var(--text-dim);">รอรับข้อมูลจาก ESP32... (ตรวจสอบว่าบอร์ดเปิดอยู่และเชื่อมต่อ MQTT สำเร็จ)</div>`;
+      return;
+    }
+    grid.innerHTML = "";
+    ids.forEach((id, i) => {
+      const dev = devices[id];
+      const isOn = dev.state;
+      const cost = (dev.kwh || 0) * rate;
+      const card = document.createElement("div");
+      card.className = "breaker" + (isOn ? " is-on" : "");
+      const timerHtml = isOn
+        ? (deviceTimers[id]
+            ? `<div class="timer-active"><span>⏱ ปิดอัตโนมัติใน ${formatCountdown(deviceTimers[id]-Date.now())}</span><button class="timer-cancel" onclick="clearDeviceTimer('${id}')">ยกเลิก</button></div>`
+            : `<div class="timer-btns">
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',30)">30 นาที</button>
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',60)">1 ชม.</button>
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',180)">3 ชม.</button>
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',360)">6 ชม.</button>
+               </div>`)
+        : "";
+      card.innerHTML = `
+        <div class="breaker-top">
+          <div>
+            <div class="breaker-num">${id.toUpperCase()}</div>
+            <div class="breaker-name">${dev.name}</div>
+          </div>
+          <div class="led"></div>
+        </div>
+        <div class="breaker-mid">
+          <div class="status-text">${isOn ? "กำลังทำงาน" : "ปิดอยู่"}</div>
+          <div class="switch-track ${isOn ? 'on' : ''} ${connected ? '' : 'disabled'}" onclick="toggleDevice('${id}')">
+            <div class="switch-thumb"></div>
+          </div>
+        </div>
+        <div class="device-cost">
+          <span style="color:var(--text-secondary);">${dev.watt} W</span>
+          <span style="color:var(--on-color); font-weight:600;">฿${cost.toFixed(2)}</span>
+        </div>
+        <div class="timer-row">
+          <div class="timer-label">ตั้งเวลาปิดอัตโนมัติ</div>
+          ${timerHtml || '<div style="font-family:monospace; font-size:10px; color:var(--text-dim);">เปิดอุปกรณ์ก่อนจึงตั้งเวลาได้</div>'}
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // ---------- สรุปพลังงาน/ค่าไฟรวม ----------
+  function renderCostSummary(totalKwh) {
+    document.getElementById("totalKwh").textContent = totalKwh.toFixed(3) + " kWh";
+    document.getElementById("totalCost").textContent = "฿" + (totalKwh * rate).toFixed(2);
+  }
+
+  // ---------- กราฟเรียลไทม์ ----------
+  function toSmoothPath(pts) {
+    if (pts.length < 2) return pts.length ? `M ${pts[0].x},${pts[0].y}` : "";
+    let d = `M ${pts[0].x},${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const xc = (pts[i].x + pts[i - 1].x) / 2;
+      const yc = (pts[i].y + pts[i - 1].y) / 2;
+      d += ` Q ${pts[i - 1].x},${pts[i - 1].y} ${xc},${yc}`;
+    }
+    const last = pts[pts.length - 1];
+    d += ` L ${last.x},${last.y}`;
+    return d;
+  }
+
+  function updateChartHistory() {
+    Object.keys(devices).forEach(id => {
+      if (!historyData[id]) historyData[id] = [];
+      const val = devices[id].state ? devices[id].watt : 0;
+      historyData[id].push(val);
+      if (historyData[id].length > 30) historyData[id].shift();
+    });
+    renderChart();
+  }
+
+  function renderChart() {
+    const linesG = document.getElementById("chartLines");
+    const fillsG = document.getElementById("chartFills");
+    const dotsG = document.getElementById("chartDots");
+    const legend = document.getElementById("chartLegend");
+    linesG.innerHTML = ""; fillsG.innerHTML = ""; dotsG.innerHTML = ""; legend.innerHTML = "";
+
+    const ids = Object.keys(devices);
+    ids.forEach((id, i) => {
+      const hist = historyData[id] || [];
+      if (hist.length === 0) return;
+      const color = COLORS[i % COLORS.length];
+      const pts = hist.map((v, idx) => ({
+        x: (idx / Math.max(1, hist.length - 1)) * 500,
+        y: 170 - (Math.min(v, 1500) / 1500) * 150
+      }));
+      const d = toSmoothPath(pts);
+      const last = pts[pts.length - 1];
+
+      const fill = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      fill.setAttribute("d", `${d} L ${last.x},170 L 0,170 Z`);
+      fill.setAttribute("class", "chart-fill");
+      fill.setAttribute("fill", `url(#grad${i % COLORS.length})`);
+      fillsG.appendChild(fill);
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      line.setAttribute("d", d);
+      line.setAttribute("class", "chart-line");
+      line.setAttribute("stroke", color);
+      line.style.filter = `drop-shadow(0 0 3px ${color}aa)`;
+      linesG.appendChild(line);
+
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", last.x); dot.setAttribute("cy", last.y); dot.setAttribute("r", 3.5);
+      dot.setAttribute("fill", color); dot.setAttribute("class", "chart-dot");
+      dotsG.appendChild(dot);
+
+      const item = document.createElement("div");
+      item.className = "chart-legend-item";
+      const watt = devices[id].state ? devices[id].watt : 0;
+      item.innerHTML = `<span class="chart-legend-dot" style="background:${color}"></span>${devices[id].name} <span class="chart-legend-val">${watt}W</span>`;
+      legend.appendChild(item);
+    });
+  }
+
+  // ---------- โหลด/บันทึกค่า geofencing จาก localStorage ----------
+  function loadGeoConfig() {
+    const saved = localStorage.getItem("mqtt_dashboard_geo");
+    if (saved) {
+      try {
+        const cfg = JSON.parse(saved);
+        geoLat = (cfg.lat === null || cfg.lat === undefined) ? null : cfg.lat;
+        geoLng = (cfg.lng === null || cfg.lng === undefined) ? null : cfg.lng;
+        geoEnabled = !!cfg.enabled;
+      } catch (e) {}
+    }
+    document.getElementById("geoLat").value = geoLat !== null ? geoLat : "";
+    document.getElementById("geoLng").value = geoLng !== null ? geoLng : "";
+    document.getElementById("geoEnabled").checked = geoEnabled;
+    refreshGeoRules();
+    if (geoEnabled && geoLat !== null && geoLng !== null) startGeoWatch();
+  }
+
+  function saveGeoConfig() {
+    const cfg = { lat: geoLat, lng: geoLng, enabled: geoEnabled };
+    localStorage.setItem("mqtt_dashboard_geo", JSON.stringify(cfg));
+  }
+
+  // ---------- โหลดกฎ (รายการอุปกรณ์+ระยะ+การกระทำ) จากที่หน้า geo-settings.html บันทึกไว้ ----------
+  function refreshGeoRules() {
+    geoRules = loadGeoRulesFromStorage(); // มาจาก devices-config.js
+    rebuildBoundaryTrackers();
+    const countEl = document.getElementById("geoRuleCount");
+    if (countEl) countEl.textContent = `ใช้งานอยู่ ${geoRules.length} กฎ`;
+  }
+
+  // ถ้าเปิดหน้า geo-settings.html ไว้อีกแท็บแล้วบันทึกกฎใหม่ ให้หน้านี้รับรู้ทันทีโดยไม่ต้องรีเฟรช
+  window.addEventListener("storage", (e) => {
+    if (e.key === GEO_RULES_KEY) refreshGeoRules();
+  });
+
+  // ---------- ดึงกฎล่าสุดจากฐานข้อมูลกลาง (โปรเจกต์ geo-mqtt-bridge เดียวกับ History API) ----------
+  // ให้กฎที่เห็นในหน้านี้ตรงกับที่บันทึกล่าสุดจากหน้า geo-settings.html ไม่ว่าจะแก้จากเครื่อง/มือถือเครื่องไหน
+  // ถ้าไม่ได้ตั้งค่า histUrl/histToken ไว้ หรือดึงไม่สำเร็จ จะใช้กฎจาก localStorage ของเครื่องนี้ต่อไปเงียบๆ
+  async function pullGeoRulesFromBridge() {
+    const apiUrl = (DEFAULT_CONFIG.histUrl || "").trim();
+    const apiToken = (DEFAULT_CONFIG.histToken || "").trim();
+    if (!apiUrl || !apiToken) return;
+    try {
+      const remote = await fetchRulesFromBridge(apiUrl, apiToken); // มาจาก devices-config.js
+      if (remote !== null && remote.length > 0) {
+        geoRules = remote.map(r => ({ ...r }));
+        saveGeoRulesToStorage(geoRules); // เก็บสำเนาไว้ในเครื่องนี้ด้วย เผื่อใช้งานออฟไลน์/เปิดไฟล์นี้อีกรอบ
+        rebuildBoundaryTrackers();
+        const countEl = document.getElementById("geoRuleCount");
+        if (countEl) countEl.textContent = `ใช้งานอยู่ ${geoRules.length} กฎ (ซิงค์จากฐานข้อมูล)`;
+      }
+    } catch (e) {
+      console.error("ดึงกฎเปิด/ปิดตามระยะจากฐานข้อมูลไม่สำเร็จ:", e);
+    }
+  }
+
+  // ---------- ปักหมุดตำแหน่งบอร์ดจากตำแหน่งปัจจุบันของเบราว์เซอร์ ----------
+  function useCurrentLocationAsBoard() {
+    if (!navigator.geolocation) {
+      alert("เบราว์เซอร์นี้ไม่รองรับ Geolocation API");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        geoLat = pos.coords.latitude;
+        geoLng = pos.coords.longitude;
+        document.getElementById("geoLat").value = geoLat.toFixed(6);
+        document.getElementById("geoLng").value = geoLng.toFixed(6);
+        saveGeoConfig();
+        alert("บันทึกตำแหน่งบอร์ดจากตำแหน่งปัจจุบันเรียบร้อย: " + geoLat.toFixed(6) + ", " + geoLng.toFixed(6));
+      },
+      (err) => {
+        alert("ไม่สามารถอ่านตำแหน่งปัจจุบันได้: " + err.message + "\nตรวจสอบว่าอนุญาต Location ให้เว็บนี้แล้ว และเปิดหน้าเว็บผ่าน HTTPS หรือ localhost");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  function onGeoLatLngChange() {
+    const lat = parseFloat(document.getElementById("geoLat").value);
+    const lng = parseFloat(document.getElementById("geoLng").value);
+    geoLat = isNaN(lat) ? null : lat;
+    geoLng = isNaN(lng) ? null : lng;
+    saveGeoConfig();
+  }
+
+  function onGeoEnabledChange() {
+    geoEnabled = document.getElementById("geoEnabled").checked;
+    if (geoEnabled && (geoLat === null || geoLng === null)) {
+      alert('กรุณาระบุตำแหน่งบอร์ด (Lat/Lng) หรือกดปุ่ม "ใช้ตำแหน่งปัจจุบันเป็นตำแหน่งบอร์ด" ก่อนเปิดใช้งาน');
+      document.getElementById("geoEnabled").checked = false;
+      geoEnabled = false;
+      saveGeoConfig();
+      return;
+    }
+    if (geoEnabled) startGeoWatch(); else stopGeoWatch();
+    saveGeoConfig();
+  }
+
+  function startGeoWatch() {
+    if (!navigator.geolocation) {
+      document.getElementById("geoStatus").textContent = "เบราว์เซอร์นี้ไม่รองรับ Geolocation";
+      return;
+    }
+    if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
+    rebuildBoundaryTrackers();
+    distanceBuffer = [];
+    geoWatchId = navigator.geolocation.watchPosition(
+      handlePositionUpdate,
+      (err) => { document.getElementById("geoStatus").textContent = "อ่านตำแหน่งไม่ได้: " + err.message; },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+  }
+
+  function stopGeoWatch() {
+    if (geoWatchId !== null) {
+      navigator.geolocation.clearWatch(geoWatchId);
+      geoWatchId = null;
+    }
+    document.getElementById("geoDistance").textContent = "--";
+    document.getElementById("geoStatus").textContent = "ยังไม่ได้เปิดใช้งาน";
+    rebuildBoundaryTrackers();
+  }
+
+  // สูตร Haversine: คำนวณระยะทางตรง (เมตร) ระหว่างพิกัด 2 จุดบนโลก
+  function calcDistanceMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  function median(arr) {
+    const s = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  }
+
+  function handlePositionUpdate(pos) {
+    if (geoLat === null || geoLng === null) return;
+    const rawDist = calcDistanceMeters(geoLat, geoLng, pos.coords.latitude, pos.coords.longitude);
+    const accuracy = pos.coords.accuracy || 9999;
+
+    // ทิ้งค่าที่ความแม่นยำแย่เกินไป (accuracy = รัศมีความไม่แน่นอน หน่วยเมตร)
+    if (accuracy > GEO_MAX_ACCURACY_M) {
+      document.getElementById("geoStatus").textContent =
+        `สัญญาณ GPS ไม่แม่นยำพอ (±${accuracy.toFixed(0)} ม.) กำลังรอสัญญาณที่ดีกว่า`;
+      return;
+    }
+
+    // เก็บค่าไว้หาค่ามัธยฐาน กันจุดที่กระโดดผิดปกติ (spike) จากค่าเดี่ยวๆ
+    distanceBuffer.push(rawDist);
+    if (distanceBuffer.length > GEO_BUFFER_SIZE) distanceBuffer.shift();
+    const smoothDist = median(distanceBuffer);
+
+    document.getElementById("geoDistance").textContent =
+      smoothDist < 1000 ? `${smoothDist.toFixed(0)} ม.` : `${(smoothDist / 1000).toFixed(2)} กม.`;
+
+    document.getElementById("geoStatus").textContent =
+      `GPS ±${accuracy.toFixed(0)} ม. • ใช้งานอยู่ ${geoRules.length} กฎ`;
+
+    evaluateAutoControl(smoothDist);
+  }
+
+  // ---------- สั่งเปิด/ปิดอุปกรณ์เป้าหมายแบบระบุสถานะตรงๆ (ใช้โดยระบบอัตโนมัติ) ----------
+  function setDeviceState(id, on) {
+    if (!connected || !devices[id]) return; // ยังไม่เชื่อมต่อ หรือยังไม่มีอุปกรณ์นี้ใน telemetry ก็ข้ามไปเงียบๆ
+    if (devices[id].state === on) return;   // สถานะตรงกับที่ต้องการอยู่แล้ว ไม่ต้องสั่งซ้ำ
+    devices[id].state = on;
+    if (!on) clearDeviceTimer(id, false);
+    renderBreakers();
+    client.publish(`${prefix}/${id}/set`, on ? "ON" : "OFF");
+  }
+
+  // ---------- ใช้กฎ (geoRules) สั่งอุปกรณ์ ----------
+  // direction: 'enter' = ใช้กฎที่ตั้งไว้สำหรับตอน "เข้ามาในระยะนี้"
+  //            'leave'  = ใช้กฎที่ตั้งไว้สำหรับตอน "ออกเกินระยะนี้"
+  // distanceM: ถ้าระบุ จะสั่งเฉพาะกฎของระยะนั้น, ถ้าไม่ระบุ (undefined) จะสั่งทุกกฎที่ตรง direction (ใช้กับปุ่มฉากกดเอง)
+  function applyRules(direction, distanceM) {
+    geoRules
+      .filter(r => r.direction === direction && (distanceM === undefined || Number(r.distanceM) === distanceM))
+      .forEach(r => setDeviceState(r.deviceId, r.action === 'on'));
+  }
+
+  // ตรวจการข้ามฝั่งของเกณฑ์ระยะหนึ่งเส้น โดยต้องยืนยันซ้ำหลายครั้งติดกัน (กัน spike) + มีระยะกันชน (hysteresis)
+  // คืนค่า 'in' / 'out' เมื่อพบการข้ามฝั่งใหม่ที่ยืนยันแล้ว (ยังไม่ commit ให้ tracker.side จนกว่าจะสั่งงานสำเร็จ)
+  function updateBoundary(tracker, dist, threshold) {
+    const enterBoundary = threshold;
+    const exitBoundary = threshold + GEO_HYSTERESIS_M;
+
+    let currentSide = null;
+    if (dist <= enterBoundary) currentSide = 'in';
+    else if (dist > exitBoundary) currentSide = 'out';
+    // ถ้าอยู่ในโซนกันชนระหว่างสองเส้น ไม่นับเป็นฝั่งไหน รอข้อมูลรอบถัดไป
+    if (currentSide === null) { tracker.pending = null; tracker.streak = 0; return null; }
+
+    if (currentSide === tracker.pending) tracker.streak++;
+    else { tracker.pending = currentSide; tracker.streak = 1; }
+
+    if (tracker.streak < GEO_CONFIRM_COUNT) return null; // ยืนยันไม่ครบจำนวนครั้ง ยังไม่สั่งงาน
+    if (tracker.side === currentSide) return null;        // ฝั่งเดิม ไม่ใช่การข้ามฝั่งใหม่
+    return currentSide;
+  }
+
+  // ตัดสินใจสั่งอุปกรณ์จากระยะปัจจุบัน โดยเช็คทุก "ระยะ" ที่ถูกใช้ในกฎ (geoRules) อย่างอิสระต่อกัน
+  // (แต่ละระยะมี tracker ของตัวเอง กันสวิตช์รัวแยกกัน) + ช่วงกันสั่งถี่ (cooldown) ร่วมกันทั้งหมด
+  function evaluateAutoControl(dist) {
+    if (!geoEnabled || !connected) return;
+
+    const crossings = {}; // { [distanceM]: 'in' | 'out' }
+    distinctRuleDistances().forEach(d => {
+      const tracker = boundaryTrackers[d] || (boundaryTrackers[d] = makeBoundaryTracker());
+      const cross = updateBoundary(tracker, dist, d);
+      if (cross !== null) crossings[d] = cross;
+    });
+    if (Object.keys(crossings).length === 0) return;
+
+    const now = Date.now();
+    if (now - lastAutoActionAt < GEO_COOLDOWN_MS) return; // รอ cooldown ก่อน ยังไม่ commit ฝั่งใหม่ จะตรวจพบซ้ำได้รอบถัดไป
+
+    Object.keys(crossings).forEach(dStr => {
+      const d = Number(dStr);
+      const side = crossings[dStr];
+      boundaryTrackers[d].side = side;
+      applyRules(side === 'in' ? 'enter' : 'leave', d);
+    });
+
+    lastAutoActionAt = now;
+  }
+
+  // ================== ธีมสว่าง/มืด ==================
+  function applyTheme(theme) {
+    document.body.classList.toggle('theme-dark', theme === 'dark');
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+
+  function loadTheme() {
+    applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+  }
+
+  function toggleTheme() {
+    const next = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem(THEME_KEY, next);
+    // กราฟ/โดนัทบางส่วนวาดด้วย SVG ตรงๆ ไม่ใช่ CSS ต้องสั่งวาดใหม่ให้สีตรงกับธีม
+    renderTodayBars(); renderMonthBars(); renderDeviceDonut(); renderRankings();
+  }
+
+  // ================== แจ้งเตือนความปลอดภัย: บอร์ดหลุด / ใช้ไฟเกิน ==================
+  function renderAlerts() {
+    const stack = document.getElementById('alertStack');
+    if (!stack) return;
+    const alerts = [];
+
+    if (connected && lastTelemetryAt > 0) {
+      const idleSec = (Date.now() - lastTelemetryAt) / 1000;
+      if (idleSec > DEFAULT_CONFIG.staleTelemetrySec) {
+        alerts.push({ type: 'danger', icon: '⚠️',
+          text: `ไม่ได้รับข้อมูลจากบอร์ดมา ${idleSec.toFixed(0)} วินาทีแล้ว สถานะอุปกรณ์ที่แสดงอยู่อาจไม่ตรงกับความเป็นจริง (บอร์ดอาจหลุดเน็ต/รีสตาร์ท/ไฟดับ) — ตรวจสอบบอร์ดจริงก่อนเชื่อสถานะบนหน้าจอ` });
+      }
+    }
+
+    const totalWattOn = Object.values(devices).reduce((sum, d) => sum + (d.state ? (d.watt || 0) : 0), 0);
+    if (totalWattOn >= DEFAULT_CONFIG.maxWatt) {
+      alerts.push({ type: 'warn', icon: '🔥',
+        text: `กำลังไฟรวมที่เปิดใช้งานอยู่ตอนนี้สูงถึง ${totalWattOn} W (เกินเกณฑ์ ${DEFAULT_CONFIG.maxWatt} W ที่ตั้งไว้) เสี่ยงเบรกเกอร์ตัดหรือสายไฟ/ปลั๊กร้อนเกิน แนะนำปิดบางอุปกรณ์ลง` });
+    }
+
+    stack.innerHTML = alerts.map(a => `
+      <div class="alert-banner ${a.type}"><span class="alert-icon">${a.icon}</span><span>${a.text}</span></div>
+    `).join("");
+  }
+
+  // เช็คความเงียบของ telemetry เป็นระยะ เผื่อกรณีไม่มีข้อความ MQTT ใหม่เข้ามาเลย (ต่างจากตอนได้รับ telemetry ที่เช็คสดอยู่แล้ว)
+  setInterval(() => { if (connected) renderAlerts(); }, 5000);
+
+  // ================== ปุ่มฉุกเฉิน: ปิดทุกอุปกรณ์ทันที ==================
+  function killSwitch() {
+    if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
+    const onIds = Object.keys(devices).filter(id => devices[id].state);
+    if (onIds.length === 0) { alert('ไม่มีอุปกรณ์ที่เปิดอยู่ในขณะนี้'); return; }
+    if (!confirm(`ยืนยันปิดอุปกรณ์ทั้งหมด ${onIds.length} รายการทันทีหรือไม่?`)) return;
+    onIds.forEach(id => {
+      devices[id].state = false;
+      client.publish(`${prefix}/${id}/set`, "OFF");
+      clearDeviceTimer(id, false);
+    });
+    renderBreakers();
+    renderAlerts();
+  }
+
+  // ================== ฉากอัตโนมัติ: กลับบ้าน / ออกจากบ้าน (ปุ่มกดเอง ใช้ชุดคำสั่งเดียวกับระบบระยะทาง) ==================
+  function sceneComeHome() {
+    if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
+    applyRules('enter'); // ทุกกฎที่ตั้งไว้สำหรับ "เข้ามาในระยะ" ไม่ว่าจะกี่เมตรก็ตาม
+  }
+
+  function sceneLeaveHome() {
+    if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
+    applyRules('leave'); // ทุกกฎที่ตั้งไว้สำหรับ "ออกเกินระยะ" ไม่ว่าจะกี่เมตรก็ตาม
+  }
+
+  // ================== ตั้งเวลาปิดอัตโนมัติรายอุปกรณ์ (Sleep Timer) ==================
+  function loadDeviceTimers() {
+    try {
+      const saved = localStorage.getItem(TIMER_KEY);
+      deviceTimers = saved ? JSON.parse(saved) : {};
+    } catch (e) { deviceTimers = {}; }
+    if (Object.keys(deviceTimers).length > 0) ensureTimerTick();
+  }
+
+  function saveDeviceTimers() {
+    localStorage.setItem(TIMER_KEY, JSON.stringify(deviceTimers));
+  }
+
+  function setDeviceTimer(id, minutes) {
+    deviceTimers[id] = Date.now() + minutes * 60000;
+    saveDeviceTimers();
+    ensureTimerTick();
+    renderBreakers();
+  }
+
+  function clearDeviceTimer(id, rerender = true) {
+    if (deviceTimers[id] === undefined) return;
+    delete deviceTimers[id];
+    saveDeviceTimers();
+    if (rerender) renderBreakers();
+  }
+
+  function ensureTimerTick() {
+    if (timerTickHandle) return;
+    timerTickHandle = setInterval(tickDeviceTimers, 1000);
+  }
+
+  function tickDeviceTimers() {
+    if (Object.keys(deviceTimers).length === 0) {
+      clearInterval(timerTickHandle);
+      timerTickHandle = null;
+      return;
+    }
+    const now = Date.now();
+    let changed = false;
+    Object.keys(deviceTimers).forEach(id => {
+      if (now >= deviceTimers[id]) {
+        if (connected && client) client.publish(`${prefix}/${id}/set`, "OFF");
+        if (devices[id]) devices[id].state = false;
+        delete deviceTimers[id];
+        changed = true;
+      }
+    });
+    if (changed) saveDeviceTimers();
+    renderBreakers();
+  }
+
+  function formatCountdown(ms) {
+    const totalSec = Math.max(0, Math.round(ms / 1000));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  // ---------- ส่งออก CSV ----------
+  function exportCsv() {
+    let csv = "Device,Watt,kWh,Cost\n";
+    Object.keys(devices).forEach(id => {
+      const d = devices[id];
+      csv += `${d.name},${d.watt},${(d.kwh || 0).toFixed(4)},${((d.kwh || 0) * rate).toFixed(2)}\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "energy-report.csv";
+    a.click();
+  }
+
+  // ================== ระบบเก็บประวัติการใช้ไฟ (localStorage) ==================
+  // หมายเหตุสำคัญ: ระบบนี้เก็บข้อมูลได้เฉพาะช่วงที่ "เปิดหน้าเว็บนี้ค้างไว้และเชื่อมต่อ MQTT อยู่" เท่านั้น
+  // ถ้าปิดแท็บ/ปิดเบราว์เซอร์ พลังงานที่ใช้ไปในช่วงนั้นจะไม่ถูกบันทึก (ไม่มีเซิร์ฟเวอร์กลางคอยเก็บให้ตลอดเวลา)
+  const HIST_KEY = "energy_history_v1";
+  let lastDeviceKwh = {}; // ค่า kwh สะสมล่าสุดที่เคยเห็นของแต่ละอุปกรณ์ (ไว้คำนวณส่วนต่าง)
+  let hist = { hourly: {}, daily: {}, deviceDaily: {}, budget: null };
+
+  function todayKey(d = new Date()) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function loadHistory() {
+    try {
+      const saved = localStorage.getItem(HIST_KEY);
+      if (saved) hist = Object.assign({ hourly: {}, daily: {}, deviceDaily: {}, budget: null }, JSON.parse(saved));
+    } catch (e) { console.error("โหลดประวัติไม่สำเร็จ:", e); }
+
+    // จำกัดขนาด: เก็บ hourly ย้อนหลังไม่เกิน 35 วัน กัน localStorage บวมเกินไป
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 35);
+    Object.keys(hist.hourly).forEach(k => { if (new Date(k) < cutoff) delete hist.hourly[k]; });
+
+    if (hist.budget !== null && hist.budget !== undefined) {
+      document.getElementById("budgetInput").value = hist.budget;
+    }
+    const mp = document.getElementById("monthPicker");
+    if (!mp.value) mp.value = todayKey().slice(0, 7);
+  }
+
+  function saveHistoryLocal() {
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); }
+    catch (e) { console.error("บันทึกประวัติไม่สำเร็จ (พื้นที่เต็ม?):", e); }
+  }
+
+  function saveHistory() {
+    saveHistoryLocal();
+    queueHistorySync(); // ส่งขึ้นฐานข้อมูลด้วย ถ้าเชื่อมต่อไว้ (หน่วงเวลาไม่ให้ยิงถี่เกินไป)
+  }
+
+  // ---------- ซิงค์ประวัติกับฐานข้อมูล (Upstash Redis ผ่าน Vercel Function api/history.js) ----------
+  // ถ้าไม่ได้กรอก History API URL / Token ไว้ ระบบจะทำงานแบบเดิมคือเก็บไว้ใน localStorage ของเบราว์เซอร์นี้เครื่องเดียว
+  let histApiUrl = "";
+  let histApiToken = "";
+  let histSyncTimer = null;
+  let histSyncing = false;
+
+  function setHistSyncStatus(text) {
+    const el = document.getElementById("histSyncStatus");
+    if (el) el.textContent = text;
+  }
+
+  function historyEndpoint() {
+    return `${histApiUrl.replace(/\/$/, '')}/api/history?token=${encodeURIComponent(histApiToken)}`;
+  }
+
+  function connectHistoryDb() {
+    histApiUrl = (DEFAULT_CONFIG.histUrl || "").trim();
+    histApiToken = (DEFAULT_CONFIG.histToken || "").trim();
+    if (!histApiUrl || !histApiToken) {
+      alert("ยังไม่ได้ตั้งค่า History API URL / Token ใน DEFAULT_CONFIG ที่ต้นไฟล์ (ในส่วน <script>)");
+      return;
+    }
+    fetchHistoryFromServer();
+  }
+
+  async function fetchHistoryFromServer() {
+    if (!histApiUrl || !histApiToken) return;
+    try {
+      setHistSyncStatus("กำลังโหลดกราฟจากฐานข้อมูล...");
+      const r = await fetch(historyEndpoint());
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const serverHist = await r.json();
+      hist = Object.assign({ hourly: {}, daily: {}, deviceDaily: {}, budget: null }, serverHist);
+      saveHistoryLocal(); // เก็บสำเนาไว้ในเครื่องด้วย เผื่อใช้งานตอนออฟไลน์/ยังไม่ได้เชื่อมต่อฐานข้อมูล
+      if (hist.budget !== null && hist.budget !== undefined) {
+        document.getElementById("budgetInput").value = hist.budget;
+      }
+      renderTodayBars(); renderMonthBars(); renderDeviceDonut(); renderRankings(); updateEnergyAdvice();
+      setHistSyncStatus("ซิงค์ล่าสุด: " + new Date().toLocaleTimeString('th-TH'));
+    } catch (e) {
+      console.error("โหลดประวัติจากฐานข้อมูลไม่สำเร็จ:", e);
+      setHistSyncStatus("โหลดจากฐานข้อมูลไม่สำเร็จ (ใช้ข้อมูลในเครื่องแทน)");
+    }
+  }
+
+  function queueHistorySync() {
+    if (!histApiUrl || !histApiToken) return;
+    clearTimeout(histSyncTimer);
+    histSyncTimer = setTimeout(pushHistoryToServer, 3000); // หน่วงไว้กันยิงถี่เกินไปตอนข้อมูลเข้ารัวๆ
+  }
+
+  async function pushHistoryToServer() {
+    if (!histApiUrl || !histApiToken || histSyncing) return;
+    histSyncing = true;
+    try {
+      setHistSyncStatus("กำลังบันทึกลงฐานข้อมูล...");
+      const r = await fetch(historyEndpoint(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hist)
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setHistSyncStatus("ซิงค์ล่าสุด: " + new Date().toLocaleTimeString('th-TH'));
+    } catch (e) {
+      console.error("บันทึกประวัติลงฐานข้อมูลไม่สำเร็จ:", e);
+      setHistSyncStatus("บันทึกลงฐานข้อมูลไม่สำเร็จ (ลองใหม่รอบหน้า)");
+    } finally {
+      histSyncing = false;
+    }
+  }
+
+  // คำนวณส่วนต่างพลังงาน (kWh) ของแต่ละอุปกรณ์ตั้งแต่ telemetry รอบก่อนหน้า แล้วสะสมเข้าตะกร้ารายชั่วโมง/รายวัน
+  function recordHistoryDelta() {
+    const now = new Date();
+    const dKey = todayKey(now);
+    const hour = now.getHours();
+
+    if (!hist.hourly[dKey]) hist.hourly[dKey] = new Array(24).fill(0);
+    if (!hist.deviceDaily[dKey]) hist.deviceDaily[dKey] = {};
+
+    let totalDelta = 0;
+    Object.keys(devices).forEach(id => {
+      const currentKwh = devices[id].kwh || 0;
+      const prevKwh = lastDeviceKwh[id];
+      let delta = 0;
+      if (prevKwh !== undefined && currentKwh >= prevKwh) {
+        delta = currentKwh - prevKwh; // กรณีปกติ
+      }
+      // ถ้า currentKwh < prevKwh แปลว่า ESP32 เพิ่งรีสตาร์ท (ค่าสะสมรีเซ็ต) ให้ข้ามรอบนี้ไป ไม่ลบเป็นค่าติดลบ
+      lastDeviceKwh[id] = currentKwh;
+
+      if (delta > 0) {
+        totalDelta += delta;
+        hist.deviceDaily[dKey][id] = (hist.deviceDaily[dKey][id] || 0) + delta;
+      }
+    });
+
+    if (totalDelta > 0) {
+      hist.hourly[dKey][hour] += totalDelta;
+      hist.daily[dKey] = (hist.daily[dKey] || 0) + totalDelta;
+      saveHistory();
+      renderTodayBars();
+      renderMonthBars();
+      renderDeviceDonut();
+      renderRankings();
+      updateBudget();
+      updateEnergyAdvice();
+    }
+  }
+
+  // ---------- สลับแท็บ วันนี้ / รายเดือน ----------
+  function switchHistTab(t) {
+    document.getElementById("tabToday").classList.toggle("active", t === 'today');
+    document.getElementById("tabMonth").classList.toggle("active", t === 'month');
+    document.getElementById("todayView").style.display = t === 'today' ? 'block' : 'none';
+    document.getElementById("monthView").style.display = t === 'month' ? 'block' : 'none';
+  }
+
+  function onBudgetChange() {
+    hist.budget = parseFloat(document.getElementById("budgetInput").value) || null;
+    saveHistory();
+    updateBudget();
+    updateEnergyAdvice();
+  }
+
+  // ---------- กราฟแท่งรายชั่วโมงของวันนี้ ----------
+  function renderTodayBars() {
+    const svg = document.getElementById("todayBarSvg");
+    svg.innerHTML = "";
+    const dKey = todayKey();
+    const hoursData = hist.hourly[dKey] || new Array(24).fill(0);
+    const maxVal = Math.max(...hoursData, 0.1);
+
+    let p1=0,p2=0,p3=0,p4=0;
+    hoursData.forEach((v,h) => {
+      if (h>=6 && h<12) p1+=v; else if (h>=12 && h<18) p2+=v; else if (h>=18 && h<22) p3+=v; else p4+=v;
+    });
+    document.getElementById("p1").textContent = p1.toFixed(3)+" kWh";
+    document.getElementById("p2").textContent = p2.toFixed(3)+" kWh";
+    document.getElementById("p3").textContent = p3.toFixed(3)+" kWh";
+    document.getElementById("p4").textContent = p4.toFixed(3)+" kWh";
+
+    const totalToday = hoursData.reduce((a,b)=>a+b,0);
+    document.getElementById("todayTotalText").textContent = `รวมวันนี้: ${totalToday.toFixed(3)} kWh · ฿${(totalToday*rate).toFixed(2)}`;
+
+    let peakHour=0, maxPeak=0;
+    hoursData.forEach((v,h) => { if (v>maxPeak) { maxPeak=v; peakHour=h; } });
+    document.getElementById("peakText").textContent = maxPeak > 0
+      ? `ช่วงพีคของวันนี้: ${String(peakHour).padStart(2,'0')}:00-${String((peakHour+1)%24).padStart(2,'0')}:00 (${maxPeak.toFixed(3)} kWh)`
+      : `ช่วงพีคของวันนี้: -`;
+
+    hoursData.forEach((val,i) => {
+      const x = i*20+8;
+      const height = (val/maxVal)*110;
+      const y = 130-height;
+      const isPeak = val === maxPeak && val > 0;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x",x); rect.setAttribute("y",y); rect.setAttribute("width",14); rect.setAttribute("height",height);
+      rect.setAttribute("class", isPeak ? "bar peak" : "bar");
+      svg.appendChild(rect);
+      if (i%2===0) {
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x",x-2); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill",cssVar('--text-dim'));
+        text.textContent = String(i).padStart(2,'0');
+        svg.appendChild(text);
+      }
+    });
+  }
+
+  // ---------- กราฟแท่งรายวันของเดือนที่เลือก ----------
+  function renderMonthBars() {
+    const svg = document.getElementById("monthBarSvg");
+    svg.innerHTML = "";
+    const monthStr = document.getElementById("monthPicker").value || todayKey().slice(0,7);
+    const [y, m] = monthStr.split('-').map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+
+    const days = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      days.push(hist.daily[key] || 0);
+    }
+    const maxVal = Math.max(...days, 0.1);
+    let maxPeak = 0; days.forEach(v => { if (v>maxPeak) maxPeak = v; });
+
+    const sumKwh = days.reduce((a,b)=>a+b,0);
+    document.getElementById("mKwh").textContent = sumKwh.toFixed(2);
+    document.getElementById("mCost").textContent = "฿"+(sumKwh*rate).toFixed(2);
+
+    // พยากรณ์: ใช้ค่าเฉลี่ยต่อวัน "เท่าที่มีข้อมูลจริง" คูณจำนวนวันทั้งเดือน
+    const daysWithData = days.filter(v => v > 0).length || 1;
+    const forecastCost = ((sumKwh / daysWithData) * daysInMonth) * rate;
+    document.getElementById("forecastVal").textContent = "฿"+forecastCost.toFixed(2);
+
+    const budgetVal = hist.budget;
+    const budgetWrap = document.getElementById("budgetWrap");
+    if (budgetVal > 0) {
+      budgetWrap.style.display = "block";
+      const pct = Math.min(100, (forecastCost/budgetVal)*100);
+      const fill = document.getElementById("budgetFill");
+      fill.style.width = pct.toFixed(1)+"%";
+      fill.classList.toggle("warn", pct >= 80);
+      document.getElementById("budgetLabel").textContent = `${forecastCost.toFixed(2)} / ${budgetVal.toFixed(2)} บาท (${pct.toFixed(0)}%)`;
+    } else {
+      budgetWrap.style.display = "none";
+    }
+
+    days.forEach((val,i) => {
+      const x = i*(490/daysInMonth)+5;
+      const width = Math.max(3, (490/daysInMonth)-3);
+      const height = (val/maxVal)*120;
+      const yPos = 130-height;
+      const isPeak = val === maxPeak && val > 0;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x",x); rect.setAttribute("y",yPos); rect.setAttribute("width",width); rect.setAttribute("height",height);
+      rect.setAttribute("class", isPeak ? "bar peak" : "bar");
+      svg.appendChild(rect);
+      if (daysInMonth <= 31 && (i+1) % (daysInMonth > 20 ? 3 : 2) === 0) {
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x",x); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill",cssVar('--text-dim'));
+        text.textContent = String(i+1).padStart(2,'0');
+        svg.appendChild(text);
+      }
+    });
+
+    renderMonthCompare(y, m, sumKwh);
+  }
+
+  // ---------- เทียบการใช้ไฟเดือนที่เลือกกับเดือนก่อนหน้า ----------
+  function renderMonthCompare(y, m, sumKwh) {
+    const el = document.getElementById('monthCompare');
+    if (!el) return;
+    let prevY = y, prevM = m - 1;
+    if (prevM < 1) { prevM = 12; prevY = y - 1; }
+    const prevDaysInMonth = new Date(prevY, prevM, 0).getDate();
+    let prevSum = 0;
+    for (let d = 1; d <= prevDaysInMonth; d++) {
+      const key = `${prevY}-${String(prevM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      prevSum += hist.daily[key] || 0;
+    }
+
+    if (prevSum <= 0) {
+      el.innerHTML = `<div style="font-family:monospace; font-size:11px; color:var(--text-dim);">ยังไม่มีข้อมูลของเดือนก่อนหน้า (${prevY}-${String(prevM).padStart(2,'0')}) ให้เทียบ</div>`;
+      return;
+    }
+
+    const curCost = sumKwh * rate;
+    const prevCost = prevSum * rate;
+    const maxVal = Math.max(sumKwh, prevSum, 0.1);
+    const diffPct = ((sumKwh - prevSum) / prevSum) * 100;
+    const diffColor = diffPct > 0 ? 'var(--warn-color)' : 'var(--on-color)';
+    const diffText = diffPct > 0
+      ? `ใช้ไฟเพิ่มขึ้น ${diffPct.toFixed(1)}% เทียบกับเดือนก่อน`
+      : `ใช้ไฟลดลง ${Math.abs(diffPct).toFixed(1)}% เทียบกับเดือนก่อน`;
+
+    el.innerHTML = `
+      <div class="compare-row">
+        <span class="compare-label">เดือนนี้</span>
+        <div class="compare-bar-bg"><div class="compare-bar-fill" style="width:${Math.min(100,(sumKwh/maxVal)*100)}%; background:var(--on-color);"></div></div>
+        <span class="compare-val">${sumKwh.toFixed(2)} kWh</span>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">เดือนก่อน</span>
+        <div class="compare-bar-bg"><div class="compare-bar-fill" style="width:${Math.min(100,(prevSum/maxVal)*100)}%; background:var(--off-color);"></div></div>
+        <span class="compare-val">${prevSum.toFixed(2)} kWh</span>
+      </div>
+      <div class="compare-delta" style="color:${diffColor};">→ ${diffText} (ค่าไฟประมาณ ${curCost.toFixed(2)} บาท เทียบกับ ${prevCost.toFixed(2)} บาท)</div>
+    `;
+  }
+
+  function updateBudget() { renderMonthBars(); } // ใช้ฟังก์ชันเดียวกัน เพราะงบผูกอยู่กับกราฟเดือน
+
+  // ---------- Donut สัดส่วนอุปกรณ์ของวันนี้ ----------
+  function renderDeviceDonut() {
+    const box = document.getElementById("deviceDonut");
+    const legend = document.getElementById("donutLegend");
+    box.innerHTML = "";
+    const dKey = todayKey();
+    const raw = hist.deviceDaily[dKey] || {};
+    const ids = Object.keys(devices);
+    const items = ids.map((id,i) => ({ name: devices[id].name, kwh: raw[id] || 0, color: COLORS[i % COLORS.length] }));
+    const total = items.reduce((a,b)=>a+b.kwh,0);
+
+    const size=160, radius=60, stroke=24, cx=size/2, cy=size/2;
+    const circumference = 2*Math.PI*radius;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS,"svg");
+    svg.setAttribute("viewBox",`0 0 ${size} ${size}`); svg.setAttribute("width",size); svg.setAttribute("height",size);
+
+    const bg = document.createElementNS(svgNS,"circle");
+    bg.setAttribute("cx",cx); bg.setAttribute("cy",cy); bg.setAttribute("r",radius);
+    bg.setAttribute("fill","none"); bg.setAttribute("stroke","var(--panel-alt)"); bg.setAttribute("stroke-width",stroke);
+    svg.appendChild(bg);
+
+    let offset = 0;
+    if (total > 0) {
+      items.forEach(item => {
+        const len = (item.kwh/total)*circumference;
+        const arc = document.createElementNS(svgNS,"circle");
+        arc.setAttribute("cx",cx); arc.setAttribute("cy",cy); arc.setAttribute("r",radius);
+        arc.setAttribute("fill","none"); arc.setAttribute("stroke",item.color); arc.setAttribute("stroke-width",stroke);
+        arc.setAttribute("stroke-dasharray", `${len} ${circumference-len}`);
+        arc.setAttribute("stroke-dashoffset", -offset);
+        arc.setAttribute("transform", `rotate(-90 ${cx} ${cy})`);
+        svg.appendChild(arc);
+        offset += len;
+      });
+    }
+    const centerVal = document.createElementNS(svgNS,"text");
+    centerVal.setAttribute("x",cx); centerVal.setAttribute("y",cy-4); centerVal.setAttribute("text-anchor","middle");
+    centerVal.setAttribute("font-size","14"); centerVal.setAttribute("font-family","monospace"); centerVal.setAttribute("fill",cssVar('--text-primary')); centerVal.setAttribute("font-weight","600");
+    centerVal.textContent = total.toFixed(2);
+    svg.appendChild(centerVal);
+    const centerLabel = document.createElementNS(svgNS,"text");
+    centerLabel.setAttribute("x",cx); centerLabel.setAttribute("y",cy+12); centerLabel.setAttribute("text-anchor","middle");
+    centerLabel.setAttribute("font-size","9"); centerLabel.setAttribute("font-family","monospace"); centerLabel.setAttribute("fill",cssVar('--text-dim'));
+    centerLabel.textContent = "kWh วันนี้";
+    svg.appendChild(centerLabel);
+    box.appendChild(svg);
+
+    legend.innerHTML = items.map(item => {
+      const pct = total > 0 ? ((item.kwh/total)*100).toFixed(0) : 0;
+      return `<div class="donut-legend-row"><span class="donut-legend-dot" style="background:${item.color};"></span><span style="flex:1;">${item.name}</span><span style="color:var(--text-secondary);">${item.kwh.toFixed(3)} kWh (${pct}%)</span></div>`;
+    }).join("");
+  }
+
+  // ---------- อันดับอุปกรณ์กินไฟสูงสุด (วันนี้) ----------
+  function renderRankings() {
+    const list = document.getElementById("rankList");
+    const dKey = todayKey();
+    const raw = hist.deviceDaily[dKey] || {};
+    const ids = Object.keys(devices);
+    const items = ids.map((id,i) => ({ name: devices[id].name, kwh: raw[id] || 0, color: COLORS[i % COLORS.length] }));
+    const maxKwh = Math.max(...items.map(d=>d.kwh), 0.0001);
+    list.innerHTML = items.map(item => `
+      <div class="rank-item">
+        <div class="rank-header"><span>${item.name}</span><span>${item.kwh.toFixed(3)} kWh</span></div>
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${Math.min(100,(item.kwh/maxKwh)*100)}%; background:${item.color};"></div></div>
+      </div>
+    `).join("");
+  }
+
+  // ---------- ผู้ช่วยแนะนำประหยัดไฟ (วิเคราะห์จากข้อมูลที่เก็บได้) ----------
+  function updateEnergyAdvice() {
+    const adviceBox = document.getElementById("adviceText");
+    const dKey = todayKey();
+    const hoursData = hist.hourly[dKey] || new Array(24).fill(0);
+    const totalToday = hoursData.reduce((a,b)=>a+b,0);
+
+    if (totalToday < 0.005) {
+      adviceBox.style.color = "var(--on-color)";
+      adviceBox.textContent = "→ ระบบกำลังเก็บข้อมูลตามจริง เมื่อเปิดใช้งานอุปกรณ์ ระบบจะวิเคราะห์แนวทางประหยัดไฟให้ทันที";
+      return;
+    }
+
+    // เช็คงบประมาณก่อนเป็นอันดับแรก (สำคัญสุด)
+    const monthStr = todayKey().slice(0,7);
+    const [y,m] = monthStr.split('-').map(Number);
+    const daysInMonth = new Date(y,m,0).getDate();
+    let sumMonth = 0, daysWithData = 0;
+    for (let d=1; d<=daysInMonth; d++) {
+      const key = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const v = hist.daily[key] || 0;
+      sumMonth += v; if (v>0) daysWithData++;
+    }
+    const forecastCost = daysWithData > 0 ? ((sumMonth/daysWithData)*daysInMonth)*rate : 0;
+    if (hist.budget > 0 && forecastCost >= hist.budget * 0.8) {
+      adviceBox.style.color = "var(--warn-color)";
+      adviceBox.textContent = "→ ⚠️ พยากรณ์ค่าไฟเดือนนี้ใกล้เกินงบประมาณที่ตั้งไว้! แนะนำลดเวลาการเปิดเครื่องใช้ไฟฟ้ากำลังไฟสูงลง 1-2 ชั่วโมงต่อวันเพื่อคุมงบ";
+      return;
+    }
+
+    // เช็คว่ามีอุปกรณ์ตัวไหนกินไฟเกินสัดส่วนปกติ (>60% ของวันนี้)
+    const deviceRaw = hist.deviceDaily[dKey] || {};
+    let topId = null, topKwh = 0;
+    Object.keys(deviceRaw).forEach(id => { if (deviceRaw[id] > topKwh) { topKwh = deviceRaw[id]; topId = id; } });
+    if (topId && (topKwh / totalToday) > 0.6) {
+      const name = devices[topId] ? devices[topId].name : topId;
+      adviceBox.style.color = "var(--warn-color)";
+      adviceBox.textContent = `→ "${name}" เป็นอุปกรณ์ที่กินไฟสูงสุดในวันนี้ (${(topKwh/totalToday*100).toFixed(0)}% ของทั้งหมด) แนะนำตรวจสอบการตั้งค่าหรือระยะเวลาใช้งานของอุปกรณ์นี้เป็นพิเศษ`;
+      return;
+    }
+
+    let p2 = hoursData.slice(12,18).reduce((a,b)=>a+b,0);
+    if (p2 > totalToday*0.4) {
+      adviceBox.style.color = "var(--on-color)";
+      adviceBox.textContent = "→ พบการใช้ไฟฟ้าสูงในช่วงบ่าย-เย็น (12:00-18:00) แนะนำหลีกเลี่ยงการเปิดเครื่องใช้ไฟฟ้ากำลังไฟสูงพร้อมกันเพื่อลด Peak Load";
+      return;
+    }
+
+    let p4 = hoursData.slice(22,24).concat(hoursData.slice(0,6)).reduce((a,b)=>a+b,0);
+    if (p4 > totalToday*0.35) {
+      adviceBox.style.color = "var(--on-color)";
+      adviceBox.textContent = "→ พบการใช้ไฟในช่วงกลางคืนค่อนข้างสูง ตรวจสอบว่ามีอุปกรณ์ที่ไม่ได้ใช้งานเปิดทิ้งไว้โดยไม่จำเป็นหรือไม่";
+      return;
+    }
+
+    adviceBox.style.color = "var(--on-color)";
+    adviceBox.textContent = "→ การใช้พลังงานอยู่ในเกณฑ์ปกติ ลองถอดปลั๊กอุปกรณ์ที่ไม่ใช้งานเพื่อลดการกินไฟแบบ Standby Power";
+  }
+
+  // ---------- ส่งออกประวัติทั้งหมดเป็น CSV ----------
+  function exportHistoryCsv() {
+    let csv = "Date,Hour,kWh\n";
+    Object.keys(hist.hourly).sort().forEach(dKey => {
+      hist.hourly[dKey].forEach((v,h) => { if (v>0) csv += `${dKey},${h}:00,${v.toFixed(4)}\n`; });
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "energy-history.csv";
+    a.click();
+  }
+
+  loadTheme();
+  loadConfig();
+  loadGeoConfig();
+  pullGeoRulesFromBridge();
+  loadHistory();
+  loadDeviceTimers();
+  renderTodayBars();
+  renderMonthBars();
+  renderDeviceDonut();
+  renderRankings();
+  updateEnergyAdvice();
+  renderAlerts();
+</script>
+</body>
+</html>
