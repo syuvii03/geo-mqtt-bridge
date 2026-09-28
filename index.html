@@ -533,7 +533,7 @@
             devices[key] = { name: DEVICE_NAMES[key] || key, watt: d.watt, state: d.state, kwh: d.kwh };
           } else {
             devices[key].watt = d.watt;
-            devices[key].state = d.state;
+            if (!(pendingUntil[key] && Date.now() < pendingUntil[key])) devices[key].state = d.state;
             devices[key].kwh = d.kwh;
           }
         });
@@ -555,23 +555,36 @@
         devices[id] = { name: DEVICE_NAMES[id] || id, watt: 0, state: false, kwh: 0 };
       }
       devices[id].state = (message === "ON");
+      delete pendingUntil[id]; // ESP32 ยืนยันแล้ว
       renderBreakers();
     }
   }
 
   // ---------- ส่งคำสั่งเปิด/ปิด ----------
+  const pendingUntil = {}; // { [id]: ms } ช่วงที่เพิ่งสั่ง ให้ข้าม telemetry เก่าที่ยังไม่สะท้อนคำสั่ง
   function toggleDevice(id) {
-    if (!connected || !devices[id]) return;
+    if (!client || !client.connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker กรุณากด "เชื่อมต่อ" ก่อน'); return; }
+    if (!devices[id]) return;
     const newState = !devices[id].state;
-    // อัปเดตหน้าจอทันทีแบบ optimistic แล้วรอ ESP32 ยืนยันกลับผ่าน .../state
     devices[id].state = newState;
-    if (!newState) clearDeviceTimer(id, false); // ปิดเองแล้ว ไม่ต้องรอตัวตั้งเวลาอีก
+    pendingUntil[id] = Date.now() + 5000;
+    if (!newState) clearDeviceTimer(id, false);
     renderBreakers();
-    client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF");
+    client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF", { qos: 0, retain: false }, (err) => {
+      if (err) { console.error("publish ไม่สำเร็จ:", err); alert("ส่งคำสั่งไม่สำเร็จ: " + err.message); }
+    });
   }
 
   // ---------- วาดการ์ดอุปกรณ์ ----------
+  let pressingSwitch = false, renderDeferred = false;
+  document.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".switch-track")) pressingSwitch = true; });
+  ["pointerup", "pointercancel"].forEach(ev => document.addEventListener(ev, () => {
+    if (!pressingSwitch) return;
+    setTimeout(() => { pressingSwitch = false; if (renderDeferred) { renderDeferred = false; renderBreakers(); } }, 50);
+  }));
+
   function renderBreakers() {
+    if (pressingSwitch) { renderDeferred = true; return; }
     const grid = document.getElementById("breakerGrid");
     const ids = Object.keys(devices);
     if (ids.length === 0) {
