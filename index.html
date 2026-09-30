@@ -192,25 +192,24 @@
     <label>ตำแหน่งบอร์ด (Lng)</label>
     <input id="geoLng" type="text" placeholder="100.501800" style="max-width:120px;" onchange="onGeoLatLngChange()">
     <button class="btn-connect" onclick="useCurrentLocationAsBoard()">📍 ใช้ตำแหน่งปัจจุบันเป็นตำแหน่งบอร์ด</button>
+    <a href="geo-settings.html" class="btn-connect" style="text-decoration:none; display:inline-block;">⚙️ ตั้งค่ากฎเปิด/ปิดตามระยะ</a>
     <label class="geo-check-label">
       <input id="geoEnabled" type="checkbox" onchange="onGeoEnabledChange()">
       เปิดใช้งานเปิด/ปิดอัตโนมัติตามระยะ
     </label>
-    <a class="btn-connect" href="geo-settings.html" target="_blank" rel="noopener" style="text-decoration:none;">⚙️ ตั้งค่ากฎเปิด/ปิดตามระยะ</a>
-    <span class="geo-status" id="geoRuleCount"></span>
-    <div class="config-hint">กำหนดได้เองว่าอุปกรณ์ไหนเปิด/ปิดที่ระยะกี่เมตร ทั้งตอน "เข้ามาในระยะ" และ "ออกเกินระยะ" ที่หน้า "ตั้งค่ากฎเปิด/ปิดตามระยะ" (เปิดในแท็บใหม่ บันทึกแล้วมีผลทันทีที่แท็บนี้) • ต้องกดยอมรับให้เว็บนี้เข้าถึงตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน • Geolocation อาจใช้ไม่ได้ถ้าเปิดไฟล์ผ่าน file:// โดยตรงในบางเบราว์เซอร์ ลองรันผ่าน localhost หรือ HTTPS หากอ่านตำแหน่งไม่ได้ • กฎชุดนี้ใช้ร่วมกับระบบ IFTTT พื้นหลัง (geo-trigger.js) ด้วยแล้ว ถ้ากดบันทึกกฎที่หน้าตั้งค่าไว้ (ซิงค์ขึ้นฐานข้อมูล) หน้านี้จะดึงกฎล่าสุดมาใช้ตอนเปิดหน้าโดยอัตโนมัติ</div>
+    <div class="config-hint">กำหนดว่าอุปกรณ์ไหนเปิด/ปิดตอนระยะกี่เมตรได้ที่หน้า "ตั้งค่ากฎเปิด/ปิดตามระยะ" (กฎจะแชร์กันระหว่างสองหน้านี้ผ่าน localStorage ของเบราว์เซอร์ ต้องเปิดจากที่เดียวกัน/โดเมนเดียวกัน) • ต้องกดยอมรับให้เว็บนี้เข้าถึงตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน • Geolocation อาจใช้ไม่ได้ถ้าเปิดไฟล์ผ่าน file:// โดยตรงในบางเบราว์เซอร์ ลองรันผ่าน localhost หรือ HTTPS หากอ่านตำแหน่งไม่ได้</div>
   </div>
 
   <div class="config-panel" id="dbPanel">
     <button class="btn-connect" onclick="connectHistoryDb()">เชื่อมต่อฐานข้อมูล</button>
-    <div class="config-hint">ค่า History API URL / Token ถูกฝังไว้ใน DEFAULT_CONFIG ที่ต้นไฟล์แล้ว แก้ไขได้ที่นั่น กดปุ่มนี้เพื่อให้กราฟย้อนหลัง (รายชั่วโมง/รายวัน/สัดส่วนอุปกรณ์) ซิงค์ข้ามเครื่อง/มือถือ • ถ้าไม่กด ระบบจะยังเก็บกราฟไว้ในเบราว์เซอร์นี้เครื่องเดียวเหมือนเดิม • ส่วน "กฎเปิด/ปิดตามระยะ" ซิงค์กับฐานข้อมูลอัตโนมัติอยู่แล้วทุกครั้งที่เปิดหน้า (ไม่ต้องกดปุ่มนี้)</div>
+    <div class="config-hint">ค่า History API URL / Token ถูกฝังไว้ใน DEFAULT_CONFIG ที่ต้นไฟล์แล้ว แก้ไขได้ที่นั่น กดปุ่มนี้เพื่อให้กราฟย้อนหลัง (รายชั่วโมง/รายวัน/สัดส่วนอุปกรณ์) ซิงค์ข้ามเครื่อง/มือถือ • ถ้าไม่กด ระบบจะยังเก็บกราฟไว้ในเบราว์เซอร์นี้เครื่องเดียวเหมือนเดิม</div>
     <div style="font-family:monospace; font-size:11px; color:var(--text-dim); margin-top:4px;" id="histSyncStatus"></div>
   </div>
 
   <div class="quick-actions-row">
     <button class="btn-danger" onclick="killSwitch()">🚨 ปิดทุกอย่างฉุกเฉิน</button>
-    <button class="btn-scene" onclick="sceneComeHome()">🏠 กลับบ้าน (ทำตามกฎ "เข้ามาในระยะ" ทั้งหมด)</button>
-    <button class="btn-scene" onclick="sceneLeaveHome()">🚪 ออกจากบ้าน (ทำตามกฎ "ออกเกินระยะ" ทั้งหมด)</button>
+    <button class="btn-scene" onclick="sceneComeHome()">🏠 กลับบ้าน (รันกฎทั้งหมดแบบเข้าใกล้)</button>
+    <button class="btn-scene" onclick="sceneLeaveHome()">🚪 ออกจากบ้าน (รันกฎทั้งหมดแบบออกห่าง)</button>
   </div>
 
   <div class="cost-summary">
@@ -345,7 +344,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
-<script src="devices-config.js"></script>
+<script src="geo-rules.js"></script>
 <script>
   // ---------- ตั้งค่าทั่วไป ----------
   // ---------- ค่าเชื่อมต่อที่ฝังไว้ในโค้ด (กรอกครั้งเดียวตรงนี้ ไม่ต้องพิมพ์ในหน้าเว็บอีก) ----------
@@ -375,8 +374,8 @@
   // devices[id] = { name, watt, state, kwh }
   let devices = {};
   const COLORS = ['#0D9488', '#EA580C', '#0284C7', '#7C3AED'];
-  // หมายเหตุ: DEVICE_NAMES มาจาก devices-config.js (ไฟล์เดียวกับที่ geo-settings.html ใช้)
-  // เพื่อกันไม่ให้รายชื่ออุปกรณ์ของสองหน้าเว็บไม่ตรงกัน — ถ้าจะเพิ่ม/แก้อุปกรณ์ แก้ที่ devices-config.js
+  // "light" = ไฟในบ้าน (เดิม), "light2" = ไฟนอกบ้าน (เพิ่มใหม่ ต้องมีอยู่ใน devices[] ของ esp32_mqtt.ino ด้วย)
+  const DEVICE_NAMES = { aircon: "แอร์", light: "ไฟในบ้าน", light2: "ไฟนอกบ้าน", fan: "พัดลม", plug: "ปลั๊กไฟทั่วไป" };
 
   let historyData = {}; // สำหรับกราฟเรียลไทม์ (เก็บย้อนหลัง 30 จุด ต่ออุปกรณ์)
 
@@ -392,11 +391,9 @@
   const THEME_KEY = "mqtt_dashboard_theme";
 
 
-  // ---------- ระบบเปิด/ปิดอัตโนมัติตามระยะห่าง (Geofencing) แบบกำหนดกฎเองได้ ----------
-  // กฎแต่ละข้อ (geoRules) = { id, deviceId, distanceM, direction: 'enter'|'leave', action: 'on'|'off' }
-  // แก้ไขกฎได้ที่หน้า geo-settings.html — หน้านี้แค่ "อ่าน" กฎมาทำงานตามระยะจริงที่วัดได้
+  // ---------- ระบบเปิด/ปิดอัตโนมัติตามระยะห่าง (Geofencing) แบบกฎที่ตั้งค่าได้ ----------
+  // กฎ (ระยะ + อุปกรณ์ที่จะเปิด/ปิดตอนเข้า/ออกระยะนั้น) มาจาก geo-rules.js / หน้า geo-settings.html
   let geoLat = null, geoLng = null, geoEnabled = false;
-  let geoRules = [];
   let geoWatchId = null;
   let lastAutoActionAt = 0;
   const GEO_COOLDOWN_MS = 10000;   // กันสั่งเปิด/ปิดถี่เกินไป
@@ -406,19 +403,10 @@
   const GEO_MAX_ACCURACY_M = 100;  // ทิ้งค่าที่ GPS ไม่แม่นยำเกินนี้ (เมตร)
   const GEO_CONFIRM_COUNT = 3;     // ต้องยืนยันกี่ครั้งติดกันก่อนสั่งเปลี่ยนสถานะจริง
 
-  // สถานะฝั่ง (ใน/นอก) ของแต่ละ "ระยะ" ที่ถูกใช้ในกฎ พร้อมตัวช่วยยืนยัน (กันค่า GPS กระโดด/แกว่ง)
-  // เก็บเป็น map แยกตามค่าระยะ (เมตร) เพราะกฎหลายข้ออาจใช้ระยะเดียวกัน ควรใช้ tracker เดียวกัน
+  // สถานะฝั่ง (ใน/นอก) ของแต่ละกฎ เก็บแยกตาม rule.id เพราะจำนวน/ระยะของกฎแก้ได้จากหน้าตั้งค่า
   function makeBoundaryTracker() { return { side: null, pending: null, streak: 0 }; }
-  let boundaryTrackers = {}; // { [distanceM]: tracker }
+  let ruleTrackers = {}; // { [ruleId]: {side, pending, streak} }
 
-  function distinctRuleDistances() {
-    return [...new Set(geoRules.map(r => Number(r.distanceM)))].filter(d => d > 0);
-  }
-
-  function rebuildBoundaryTrackers() {
-    boundaryTrackers = {};
-    distinctRuleDistances().forEach(d => { boundaryTrackers[d] = makeBoundaryTracker(); });
-  }
 
   // ---------- อ่านค่าสี CSS variable ปัจจุบัน (เปลี่ยนตามธีมสว่าง/มืดอัตโนมัติ) ----------
   function cssVar(name) {
@@ -533,7 +521,7 @@
             devices[key] = { name: DEVICE_NAMES[key] || key, watt: d.watt, state: d.state, kwh: d.kwh };
           } else {
             devices[key].watt = d.watt;
-            if (!(pendingUntil[key] && Date.now() < pendingUntil[key])) devices[key].state = d.state;
+            devices[key].state = d.state;
             devices[key].kwh = d.kwh;
           }
         });
@@ -550,41 +538,26 @@
 
     if (parts.length === 3 && parts[2] === 'state') {
       const id = parts[1];
-      // สร้างการ์ดอุปกรณ์จากข้อความ state (retained) ได้เลย ไม่ต้องรอ telemetry ก่อน
-      if (!devices[id]) {
-        devices[id] = { name: DEVICE_NAMES[id] || id, watt: 0, state: false, kwh: 0 };
+      if (devices[id]) {
+        devices[id].state = (message === "ON");
+        renderBreakers();
       }
-      devices[id].state = (message === "ON");
-      delete pendingUntil[id]; // ESP32 ยืนยันแล้ว
-      renderBreakers();
     }
   }
 
   // ---------- ส่งคำสั่งเปิด/ปิด ----------
-  const pendingUntil = {}; // { [id]: ms } ช่วงที่เพิ่งสั่ง ให้ข้าม telemetry เก่าที่ยังไม่สะท้อนคำสั่ง
   function toggleDevice(id) {
-    if (!client || !client.connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker กรุณากด "เชื่อมต่อ" ก่อน'); return; }
-    if (!devices[id]) return;
+    if (!connected || !devices[id]) return;
     const newState = !devices[id].state;
+    // อัปเดตหน้าจอทันทีแบบ optimistic แล้วรอ ESP32 ยืนยันกลับผ่าน .../state
     devices[id].state = newState;
-    pendingUntil[id] = Date.now() + 5000;
-    if (!newState) clearDeviceTimer(id, false);
+    if (!newState) clearDeviceTimer(id, false); // ปิดเองแล้ว ไม่ต้องรอตัวตั้งเวลาอีก
     renderBreakers();
-    client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF", { qos: 0, retain: false }, (err) => {
-      if (err) { console.error("publish ไม่สำเร็จ:", err); alert("ส่งคำสั่งไม่สำเร็จ: " + err.message); }
-    });
+    client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF");
   }
 
   // ---------- วาดการ์ดอุปกรณ์ ----------
-  let pressingSwitch = false, renderDeferred = false;
-  document.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".switch-track")) pressingSwitch = true; });
-  ["pointerup", "pointercancel"].forEach(ev => document.addEventListener(ev, () => {
-    if (!pressingSwitch) return;
-    setTimeout(() => { pressingSwitch = false; if (renderDeferred) { renderDeferred = false; renderBreakers(); } }, 50);
-  }));
-
   function renderBreakers() {
-    if (pressingSwitch) { renderDeferred = true; return; }
     const grid = document.getElementById("breakerGrid");
     const ids = Object.keys(devices);
     if (ids.length === 0) {
@@ -724,47 +697,12 @@
     document.getElementById("geoLat").value = geoLat !== null ? geoLat : "";
     document.getElementById("geoLng").value = geoLng !== null ? geoLng : "";
     document.getElementById("geoEnabled").checked = geoEnabled;
-    refreshGeoRules();
     if (geoEnabled && geoLat !== null && geoLng !== null) startGeoWatch();
   }
 
   function saveGeoConfig() {
     const cfg = { lat: geoLat, lng: geoLng, enabled: geoEnabled };
     localStorage.setItem("mqtt_dashboard_geo", JSON.stringify(cfg));
-  }
-
-  // ---------- โหลดกฎ (รายการอุปกรณ์+ระยะ+การกระทำ) จากที่หน้า geo-settings.html บันทึกไว้ ----------
-  function refreshGeoRules() {
-    geoRules = loadGeoRulesFromStorage(); // มาจาก devices-config.js
-    rebuildBoundaryTrackers();
-    const countEl = document.getElementById("geoRuleCount");
-    if (countEl) countEl.textContent = `ใช้งานอยู่ ${geoRules.length} กฎ`;
-  }
-
-  // ถ้าเปิดหน้า geo-settings.html ไว้อีกแท็บแล้วบันทึกกฎใหม่ ให้หน้านี้รับรู้ทันทีโดยไม่ต้องรีเฟรช
-  window.addEventListener("storage", (e) => {
-    if (e.key === GEO_RULES_KEY) refreshGeoRules();
-  });
-
-  // ---------- ดึงกฎล่าสุดจากฐานข้อมูลกลาง (โปรเจกต์ geo-mqtt-bridge เดียวกับ History API) ----------
-  // ให้กฎที่เห็นในหน้านี้ตรงกับที่บันทึกล่าสุดจากหน้า geo-settings.html ไม่ว่าจะแก้จากเครื่อง/มือถือเครื่องไหน
-  // ถ้าไม่ได้ตั้งค่า histUrl/histToken ไว้ หรือดึงไม่สำเร็จ จะใช้กฎจาก localStorage ของเครื่องนี้ต่อไปเงียบๆ
-  async function pullGeoRulesFromBridge() {
-    const apiUrl = (DEFAULT_CONFIG.histUrl || "").trim();
-    const apiToken = (DEFAULT_CONFIG.histToken || "").trim();
-    if (!apiUrl || !apiToken) return;
-    try {
-      const remote = await fetchRulesFromBridge(apiUrl, apiToken); // มาจาก devices-config.js
-      if (remote !== null && remote.length > 0) {
-        geoRules = remote.map(r => ({ ...r }));
-        saveGeoRulesToStorage(geoRules); // เก็บสำเนาไว้ในเครื่องนี้ด้วย เผื่อใช้งานออฟไลน์/เปิดไฟล์นี้อีกรอบ
-        rebuildBoundaryTrackers();
-        const countEl = document.getElementById("geoRuleCount");
-        if (countEl) countEl.textContent = `ใช้งานอยู่ ${geoRules.length} กฎ (ซิงค์จากฐานข้อมูล)`;
-      }
-    } catch (e) {
-      console.error("ดึงกฎเปิด/ปิดตามระยะจากฐานข้อมูลไม่สำเร็จ:", e);
-    }
   }
 
   // ---------- ปักหมุดตำแหน่งบอร์ดจากตำแหน่งปัจจุบันของเบราว์เซอร์ ----------
@@ -816,7 +754,7 @@
       return;
     }
     if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
-    rebuildBoundaryTrackers();
+    ruleTrackers = {};
     distanceBuffer = [];
     geoWatchId = navigator.geolocation.watchPosition(
       handlePositionUpdate,
@@ -832,8 +770,15 @@
     }
     document.getElementById("geoDistance").textContent = "--";
     document.getElementById("geoStatus").textContent = "ยังไม่ได้เปิดใช้งาน";
-    rebuildBoundaryTrackers();
+    ruleTrackers = {};
   }
+
+  // กฎอาจถูกแก้จากหน้า geo-settings.html ที่เปิดอีกแท็บ/หน้าต่างหนึ่ง — ถ้าแก้แล้ว ให้เริ่มประเมินระยะใหม่ทั้งหมด
+  window.addEventListener('storage', (e) => {
+    if (e.key === GEO_RULES_KEY) ruleTrackers = {};
+  });
+
+
 
   // สูตร Haversine: คำนวณระยะทางตรง (เมตร) ระหว่างพิกัด 2 จุดบนโลก
   function calcDistanceMeters(lat1, lng1, lat2, lng2) {
@@ -874,7 +819,7 @@
       smoothDist < 1000 ? `${smoothDist.toFixed(0)} ม.` : `${(smoothDist / 1000).toFixed(2)} กม.`;
 
     document.getElementById("geoStatus").textContent =
-      `GPS ±${accuracy.toFixed(0)} ม. • ใช้งานอยู่ ${geoRules.length} กฎ`;
+      `กำลังติดตามระยะ • GPS ±${accuracy.toFixed(0)} ม. (ดู/แก้กฎได้ที่หน้าตั้งค่า)`;
 
     evaluateAutoControl(smoothDist);
   }
@@ -887,16 +832,6 @@
     if (!on) clearDeviceTimer(id, false);
     renderBreakers();
     client.publish(`${prefix}/${id}/set`, on ? "ON" : "OFF");
-  }
-
-  // ---------- ใช้กฎ (geoRules) สั่งอุปกรณ์ ----------
-  // direction: 'enter' = ใช้กฎที่ตั้งไว้สำหรับตอน "เข้ามาในระยะนี้"
-  //            'leave'  = ใช้กฎที่ตั้งไว้สำหรับตอน "ออกเกินระยะนี้"
-  // distanceM: ถ้าระบุ จะสั่งเฉพาะกฎของระยะนั้น, ถ้าไม่ระบุ (undefined) จะสั่งทุกกฎที่ตรง direction (ใช้กับปุ่มฉากกดเอง)
-  function applyRules(direction, distanceM) {
-    geoRules
-      .filter(r => r.direction === direction && (distanceM === undefined || Number(r.distanceM) === distanceM))
-      .forEach(r => setDeviceState(r.deviceId, r.action === 'on'));
   }
 
   // ตรวจการข้ามฝั่งของเกณฑ์ระยะหนึ่งเส้น โดยต้องยืนยันซ้ำหลายครั้งติดกัน (กัน spike) + มีระยะกันชน (hysteresis)
@@ -919,27 +854,28 @@
     return currentSide;
   }
 
-  // ตัดสินใจสั่งอุปกรณ์จากระยะปัจจุบัน โดยเช็คทุก "ระยะ" ที่ถูกใช้ในกฎ (geoRules) อย่างอิสระต่อกัน
-  // (แต่ละระยะมี tracker ของตัวเอง กันสวิตช์รัวแยกกัน) + ช่วงกันสั่งถี่ (cooldown) ร่วมกันทั้งหมด
+  // ตัดสินใจสั่งงานจากระยะปัจจุบัน โดยเช็คทุกกฎที่ตั้งไว้ (จากหน้า geo-settings.html) อิสระจากกัน
+  // + ช่วงกันสั่งถี่ (cooldown) ร่วมกัน
   function evaluateAutoControl(dist) {
     if (!geoEnabled || !connected) return;
 
-    const crossings = {}; // { [distanceM]: 'in' | 'out' }
-    distinctRuleDistances().forEach(d => {
-      const tracker = boundaryTrackers[d] || (boundaryTrackers[d] = makeBoundaryTracker());
-      const cross = updateBoundary(tracker, dist, d);
-      if (cross !== null) crossings[d] = cross;
-    });
-    if (Object.keys(crossings).length === 0) return;
+    const rules = loadGeoRules();
+    const crossings = rules
+      .map(rule => {
+        const tracker = ruleTrackers[rule.id] || (ruleTrackers[rule.id] = makeBoundaryTracker());
+        return { rule, tracker, cross: updateBoundary(tracker, dist, rule.distance) };
+      })
+      .filter(x => x.cross !== null);
+
+    if (crossings.length === 0) return;
 
     const now = Date.now();
     if (now - lastAutoActionAt < GEO_COOLDOWN_MS) return; // รอ cooldown ก่อน ยังไม่ commit ฝั่งใหม่ จะตรวจพบซ้ำได้รอบถัดไป
 
-    Object.keys(crossings).forEach(dStr => {
-      const d = Number(dStr);
-      const side = crossings[dStr];
-      boundaryTrackers[d].side = side;
-      applyRules(side === 'in' ? 'enter' : 'leave', d);
+    crossings.forEach(({ rule, tracker, cross }) => {
+      tracker.side = cross;
+      const actions = cross === 'in' ? rule.enter : rule.exit;
+      actions.forEach(a => setDeviceState(a.device, a.state));
     });
 
     lastAutoActionAt = now;
@@ -1007,15 +943,22 @@
     renderAlerts();
   }
 
-  // ================== ฉากอัตโนมัติ: กลับบ้าน / ออกจากบ้าน (ปุ่มกดเอง ใช้ชุดคำสั่งเดียวกับระบบระยะทาง) ==================
+  // ================== ฉากอัตโนมัติ: กลับบ้าน / ออกจากบ้าน (ปุ่มกดเอง) ==================
+  // รันคำสั่งของ "ทุกกฎ" ที่ตั้งไว้ในหน้า geo-settings.html เรียงลำดับให้เหมือนเดินเข้า/ออกบ้านจริง
   function sceneComeHome() {
     if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
-    applyRules('enter'); // ทุกกฎที่ตั้งไว้สำหรับ "เข้ามาในระยะ" ไม่ว่าจะกี่เมตรก็ตาม
+    const rules = loadGeoRules();
+    if (rules.length === 0) { alert('ยังไม่มีกฎเลย ไปตั้งค่าที่หน้า "ตั้งค่ากฎเปิด/ปิดตามระยะ" ก่อน'); return; }
+    [...rules].sort((a, b) => b.distance - a.distance) // ไกลสุดก่อน (เหมือนเดินจากไกลเข้ามาใกล้)
+      .forEach(rule => rule.enter.forEach(a => setDeviceState(a.device, a.state)));
   }
 
   function sceneLeaveHome() {
     if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
-    applyRules('leave'); // ทุกกฎที่ตั้งไว้สำหรับ "ออกเกินระยะ" ไม่ว่าจะกี่เมตรก็ตาม
+    const rules = loadGeoRules();
+    if (rules.length === 0) { alert('ยังไม่มีกฎเลย ไปตั้งค่าที่หน้า "ตั้งค่ากฎเปิด/ปิดตามระยะ" ก่อน'); return; }
+    [...rules].sort((a, b) => a.distance - b.distance) // ใกล้สุดก่อน (เหมือนเดินออกจากบ้าน)
+      .forEach(rule => rule.exit.forEach(a => setDeviceState(a.device, a.state)));
   }
 
   // ================== ตั้งเวลาปิดอัตโนมัติรายอุปกรณ์ (Sleep Timer) ==================
@@ -1547,8 +1490,8 @@
 
   loadTheme();
   loadConfig();
+  connectMqtt();   // เชื่อมต่ออัตโนมัติทันทีที่เปิดหน้า ไม่ต้องกดปุ่ม "เชื่อมต่อ" เอง (ค่า Broker ถูกฝังไว้ใน DEFAULT_CONFIG แล้ว)
   loadGeoConfig();
-  pullGeoRulesFromBridge();
   loadHistory();
   loadDeviceTimers();
   renderTodayBars();
