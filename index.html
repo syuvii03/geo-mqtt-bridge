@@ -206,6 +206,15 @@
     <div style="font-family:monospace; font-size:11px; color:var(--text-dim); margin-top:4px;" id="histSyncStatus"></div>
   </div>
 
+  <div class="config-panel" id="irPanel">
+    <label>📡 เรียนรู้รีโมทแอร์ (IR Receiver)</label>
+    <button class="btn-connect" id="btnIrLearnOn" onclick="startIrLearn('ON')">เรียนรู้ปุ่ม "เปิดแอร์"</button>
+    <button class="btn-connect" id="btnIrLearnOff" onclick="startIrLearn('OFF')">เรียนรู้ปุ่ม "ปิดแอร์"</button>
+    <button class="btn-connect" id="btnIrCancel" onclick="cancelIrLearn()" style="display:none;">ยกเลิก</button>
+    <div class="config-hint">กดปุ่มเรียนรู้ แล้วชี้รีโมทแอร์ตัวจริงมาที่ตัวรับ IR ของบอร์ด (ห่างประมาณ 5-10 ซม.) กดปุ่มที่ต้องการภายใน 30 วินาที บอร์ดจะจำสัญญาณไว้ แล้วสวิตช์ "แอร์" ด้านล่างจะยิงสัญญาณที่เรียนรู้ไปให้แอร์ผ่าน IR LED (ตัวส่ง) • ปุ่มเปิดกับปุ่มปิดของแอร์ส่วนใหญ่ส่งรหัสไม่เหมือนกัน ควรเรียนรู้ทั้งสองปุ่ม</div>
+    <div style="font-family:monospace; font-size:12px; margin-top:6px; color:var(--text-secondary);" id="irStatus">รอเชื่อมต่อบอร์ด...</div>
+  </div>
+
   <div class="quick-actions-row">
     <button class="btn-danger" onclick="killSwitch()">🚨 ปิดทุกอย่างฉุกเฉิน</button>
     <button class="btn-scene" onclick="sceneComeHome()">🏠 กลับบ้าน (รันกฎทั้งหมดแบบเข้าใกล้)</button>
@@ -374,8 +383,8 @@
   // devices[id] = { name, watt, state, kwh }
   let devices = {};
   const COLORS = ['#0D9488', '#EA580C', '#0284C7', '#7C3AED'];
-  // "light" = ไฟในบ้าน, "light2" = ไฟหน้าบ้าน (ต้องมีอยู่ใน devices[] ของ esp32_mqtt.ino ด้วย)
-  const DEVICE_NAMES = { aircon: "แอร์", light: "ไฟในบ้าน", light2: "ไฟหน้าบ้าน", fan: "พัดลม", plug: "ปลั๊กไฟทั่วไป" };
+  // "light" = ไฟในบ้าน (เดิม), "light2" = ไฟนอกบ้าน (เพิ่มใหม่ ต้องมีอยู่ใน devices[] ของ esp32_mqtt.ino ด้วย)
+  const DEVICE_NAMES = { aircon: "แอร์", light: "ไฟในบ้าน", light2: "ไฟนอกบ้าน", fan: "พัดลม", plug: "ปลั๊กไฟทั่วไป" };
 
   let historyData = {}; // สำหรับกราฟเรียลไทม์ (เก็บย้อนหลัง 30 จุด ต่ออุปกรณ์)
 
@@ -483,6 +492,7 @@
       setConnected(true);
       client.subscribe(`${prefix}/telemetry`);
       client.subscribe(`${prefix}/+/state`);
+      client.subscribe(`${prefix}/ir/status`);
       document.getElementById("footCtrl").textContent = `${prefix}/<device>/set`;
       document.getElementById("footStatus").textContent = `${prefix}/telemetry`;
     });
@@ -509,6 +519,11 @@
   // ---------- จัดการข้อความที่ได้รับจาก MQTT ----------
   function handleMessage(topic, message) {
     const parts = topic.split('/');
+
+    if (parts.length === 3 && parts[1] === 'ir' && parts[2] === 'status') {
+      try { renderIrStatus(JSON.parse(message)); } catch (e) { console.error("แปลงสถานะ IR ไม่สำเร็จ:", e); }
+      return;
+    }
 
     if (parts.length === 2 && parts[1] === 'telemetry') {
       try {
@@ -543,6 +558,56 @@
         renderBreakers();
       }
     }
+  }
+
+  // ---------- เรียนรู้สัญญาณ IR ของรีโมทแอร์ (ผ่าน IR Receiver บนบอร์ด) ----------
+  function startIrLearn(target) {
+    if (!connected || !client) { alert("ยังไม่ได้เชื่อมต่อ MQTT"); return; }
+    client.publish(`${prefix}/ir/learn`, target);
+    const el = document.getElementById("irStatus");
+    el.style.color = "var(--text-secondary)";
+    el.textContent = "ส่งคำสั่งไปที่บอร์ดแล้ว รอการตอบกลับ...";
+  }
+
+  function cancelIrLearn() {
+    if (connected && client) client.publish(`${prefix}/ir/learn`, "CANCEL");
+  }
+
+  function renderIrStatus(s) {
+    const el = document.getElementById("irStatus");
+    const tName = s.target === "ON" ? "เปิดแอร์" : "ปิดแอร์";
+    const waiting = s.state === "waiting";
+    document.getElementById("btnIrCancel").style.display = waiting ? "inline-block" : "none";
+    document.getElementById("btnIrLearnOn").disabled = waiting;
+    document.getElementById("btnIrLearnOff").disabled = waiting;
+
+    let text, color = "var(--text-secondary)";
+    if (waiting) {
+      text = `⏳ กำลังรอสัญญาณ... ชี้รีโมทมาที่ตัวรับแล้วกดปุ่ม "${tName}" (ภายใน 30 วินาที)`;
+      color = "var(--warn-color)";
+    } else if (s.state === "captured") {
+      const n = s.target === "ON" ? s.onLen : s.offLen;
+      text = `✓ จับสัญญาณปุ่ม "${tName}" ได้แล้ว (${n} ค่า) และบันทึกไว้ในบอร์ดแล้ว`;
+      color = "var(--on-color)";
+    } else if (s.state === "timeout") {
+      text = `หมดเวลา ไม่ได้รับสัญญาณปุ่ม "${tName}" ลองใหม่อีกครั้ง`;
+      color = "var(--danger-color)";
+    } else if (s.state === "overflow") {
+      text = "สัญญาณยาวเกินที่บอร์ดเก็บได้ ลองกดใหม่อีกครั้ง";
+      color = "var(--danger-color)";
+    } else if (s.state === "error") {
+      text = "เกิดข้อผิดพลาดตอนอ่านสัญญาณ ลองใหม่อีกครั้ง";
+      color = "var(--danger-color)";
+    } else if (s.state === "cancelled") {
+      text = "ยกเลิกการเรียนรู้แล้ว";
+    } else {
+      text = "พร้อมเรียนรู้";
+    }
+    if (!waiting) {
+      text += ` · ปุ่มเปิด: ${s.onLearned ? "เรียนรู้แล้ว" : "ค่าเริ่มต้น"} · ปุ่มปิด: ${s.offLearned ? "เรียนรู้แล้ว" : "ค่าเริ่มต้น (ยังไม่ได้เรียนรู้)"}`;
+    }
+    el.textContent = text;
+    el.style.color = color;
   }
 
   // ---------- ส่งคำสั่งเปิด/ปิด ----------
