@@ -374,8 +374,8 @@
   // devices[id] = { name, watt, state, kwh }
   let devices = {};
   const COLORS = ['#0D9488', '#EA580C', '#0284C7', '#7C3AED'];
-  // "light" = ไฟในบ้าน (เดิม), "light2" = ไฟนอกบ้าน (เพิ่มใหม่ ต้องมีอยู่ใน devices[] ของ esp32_mqtt.ino ด้วย)
-  const DEVICE_NAMES = { aircon: "แอร์", light: "ไฟในบ้าน", light2: "ไฟนอกบ้าน", fan: "พัดลม", plug: "ปลั๊กไฟทั่วไป" };
+  // "light" = ไฟในบ้าน, "light2" = ไฟหน้าบ้าน (ต้องมีอยู่ใน devices[] ของ esp32_mqtt.ino ด้วย)
+  const DEVICE_NAMES = { aircon: "แอร์", light: "ไฟในบ้าน", light2: "ไฟหน้าบ้าน", fan: "พัดลม", plug: "ปลั๊กไฟทั่วไป" };
 
   let historyData = {}; // สำหรับกราฟเรียลไทม์ (เก็บย้อนหลัง 30 จุด ต่ออุปกรณ์)
 
