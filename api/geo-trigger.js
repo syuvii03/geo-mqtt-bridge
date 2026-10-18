@@ -1,8 +1,6 @@
 // ============================================================================
-// geo-trigger.js — Version 2.0 (Vercel Serverless Function: Webhook Bridge)
-// Smart Home MQTT Dashboard + Geofencing Automation (v2)
-//
-// รองรับคำสั่งจาก iOS Shortcuts / Android MacroDroid / Webhook (action=enter|exit)
+// geo-trigger.js — Version 2.1 (Multi-Zone & Pre-Cool Automation Bridge)
+// Smart Home MQTT Dashboard + Geofencing Automation
 // ============================================================================
 
 const mqtt = require('mqtt');
@@ -37,7 +35,6 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // รองรับทั้ง GET query, POST JSON body และ Authorization Bearer Header
   let token = req.query?.token;
   let rawAction = req.query?.action;
 
@@ -52,19 +49,11 @@ module.exports = async (req, res) => {
     token = authHeader.substring(7).trim();
   }
 
-  // แปลง action เป็นตัวพิมพ์เล็ก และรองรับ leave เป็น alias ของ exit
-  const rawClean = (rawAction || '').toLowerCase().trim();
-  const action = (rawClean === 'leave') ? 'exit' : rawClean;
+  const action = (rawAction || '').toLowerCase().trim();
 
   // 1. ตรวจสอบ Token
   if (!process.env.TRIGGER_TOKEN || token !== process.env.TRIGGER_TOKEN) {
     res.status(401).json({ error: 'invalid or missing token' });
-    return;
-  }
-
-  // 2. ตรวจสอบ action
-  if (action !== 'enter' && action !== 'exit') {
-    res.status(400).json({ error: 'action must be "enter" or "exit" (or "leave")' });
     return;
   }
 
@@ -78,43 +67,39 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // 3. หาอุปกรณ์และคำสั่งที่ต้องส่ง
-  const rules = await fetchRulesFromRedis();
-  let source = 'fallback-device-ids';
-  let targets = []; // Array of { id, on }
+  // 2. กำหนดอุปกรณ์และสถานะเปิด/ปิดตามเงื่อนไขที่คุณต้องการ
+  let source = 'custom-scenario';
+  let targets = [];
 
-  if (rules) {
-    const direction = (action === 'enter') ? 'enter' : 'leave';
-    const desired = {};
-
-    rules.forEach(r => {
-      // ตรวจสอบ match ทิศทาง
-      if (r && r.deviceId && (r.direction === direction || (direction === 'leave' && r.direction === 'exit'))) {
-        desired[r.deviceId] = (r.action === 'on');
-      }
-    });
-
-    targets = Object.keys(desired).map(id => ({ id, on: desired[id] }));
-    if (targets.length > 0) source = 'synced-redis-rules';
-  }
-
-  // Fallback กรณีไม่มีกฎใน Redis
-  if (targets.length === 0) {
-    const defaultOn = (action === 'enter');
-    const deviceIds = (process.env.DEVICE_IDS || 'aircon,light,fan,light2')
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean);
-    targets = deviceIds.map(id => ({ id, on: defaultOn }));
-    source = 'fallback-device-ids';
-  }
-
-  if (targets.length === 0) {
-    res.status(200).json({ ok: true, action, source, devices: [], note: 'No matching devices or rules' });
+  if (action === 'precool' || action === 'aircon_on') {
+    // โหมด 500 เมตร: เปิดเฉพาะแอร์ตัวเดียวล่วงหน้า
+    targets = [
+      { id: 'aircon', on: true }
+    ];
+    source = 'precool-500m';
+  } else if (action === 'enter' || action === 'arrive') {
+    // โหมดถึงบ้าน (100 เมตร): เปิดไฟในบ้าน + พัดลม แต่ "ปิดไฟหน้าบ้าน"
+    targets = [
+      { id: 'light',  on: true },   // ไฟในบ้าน = เปิด
+      { id: 'fan',    on: true },   // พัดลม = เปิด
+      { id: 'light2', on: false }   // ไฟหน้าบ้าน = ปิด
+    ];
+    source = 'arrive-home';
+  } else if (action === 'exit' || action === 'leave') {
+    // โหมดออกจากบ้าน: ปิดไฟในบ้าน + พัดลม + แอร์ แต่ "เปิดไฟหน้าบ้าน"
+    targets = [
+      { id: 'light',  on: false },  // ไฟในบ้าน = ปิด
+      { id: 'fan',    on: false },  // พัดลม = ปิด
+      { id: 'aircon', on: false },  // แอร์ = ปิด
+      { id: 'light2', on: true }    // ไฟหน้าบ้าน = เปิด
+    ];
+    source = 'leave-home';
+  } else {
+    res.status(400).json({ error: 'action must be "precool", "enter", or "exit"' });
     return;
   }
 
-  // 4. เชื่อมต่อ MQTT Broker และ Publish
+  // 3. เชื่อมต่อ MQTT Broker และ Publish คำสั่ง
   let responded = false;
   const clientId = `bridge-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
@@ -135,7 +120,6 @@ module.exports = async (req, res) => {
   }, 8500);
 
   client.on('connect', () => {
-    // ส่งคำสั่งทุกตัวด้วย QoS 1
     const promises = targets.map(t => {
       return new Promise((resolve) => {
         client.publish(`${prefix}/${t.id}/set`, t.on ? 'ON' : 'OFF', { qos: 1 }, (err) => {
