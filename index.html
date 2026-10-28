@@ -12,6 +12,7 @@
     --text-primary: #1F2933; --text-secondary: #5B6472;
     --text-dim: #9AA3AF; --border: #E3E6EB; --border-light: #D3D8DF; --thumb-off: #6B7280;
   }
+  /* ธีมมืด: สลับได้จากปุ่มที่มุมขวาบน ค่าที่จำไว้เก็บใน localStorage */
   body.theme-dark {
     --bg: #0B0E11; --panel: #151A20; --panel-alt: #1B2229; --panel-raised: #1F2730;
     --on-color: #5EEAD4; --on-glow: rgba(94, 234, 212, 0.45); --off-color: #4B5563;
@@ -29,7 +30,6 @@
   header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
   .title-block .eyebrow { font-family: monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
   .title-block h1 { font-size: 24px; font-weight: 700; }
-  .header-actions { display: flex; align-items: center; gap: 10px; }
   .conn-status { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; background: var(--panel); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--off-color); }
   .dot.live { background: var(--on-color); box-shadow: 0 0 8px var(--on-glow); }
@@ -46,6 +46,8 @@
   .config-panel input[type="number"] { flex: none; }
   .geo-check-label { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; color: var(--text-secondary); cursor: pointer; flex: none; }
   .geo-status { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .auto-check-label { display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 10px; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); cursor: pointer; }
+  .auto-check-label input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--on-color); cursor: pointer; }
 
   .cost-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
   .cost-item { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
@@ -76,7 +78,7 @@
   .breaker-top { display: flex; justify-content: space-between; margin-bottom: 14px; padding-right: 32px; }
   .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
   
-  /* รูปภาพและ Emoji ปรับให้ใหญ่ขึ้น */
+  /* ปรับรูปแบบรูปภาพและ Emoji สำหรับการ์ดอุปกรณ์ */
   .breaker-name { font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
   .breaker-icon-img { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-light); background: var(--panel-alt); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
   .breaker-icon-emoji { font-size: 36px; line-height: 1.1; }
@@ -150,8 +152,8 @@
   .alert-icon { font-size: 18px; flex-shrink: 0; }
 
   .quick-actions-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-  .btn-danger { background: var(--danger-color); border: 1px solid var(--danger-color); color: #fff; font-weight: 700; font-size: 13px; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
-  .btn-danger:hover { filter: brightness(1.08); }
+  .btn-danger { background: var(--danger-color); border: 1px solid var(--danger-color); color: #fff; font-weight: 700; font-size: 13px; padding: 10px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 0 0 rgba(0,0,0,0); }
+  .btn-danger:hover { filter: brightness(1.08); box-shadow: 0 0 10px var(--danger-glow); }
   .btn-scene { background: var(--panel-raised); border: 1px solid var(--border-light); color: var(--text-primary); font-weight: 600; font-size: 13px; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
   .btn-scene:hover { border-color: var(--on-color); color: var(--on-color); }
 
@@ -172,7 +174,7 @@
   .compare-val { width: 110px; flex-shrink: 0; text-align: right; }
   .compare-delta { margin-top: 4px; font-family: monospace; font-size: 12px; }
 
-  /* Modal Popup */
+  /* Modal Popup สำหรับเพิ่มอุปกรณ์ */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
   .modal-overlay.hidden { display: none; }
   .modal-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
@@ -192,13 +194,11 @@
       <div class="eyebrow">HOME AUTOMATION / MQTT</div>
       <h1>แผงควบคุมไฟฟ้า</h1>
     </div>
-    <div class="header-actions">
-      <div class="conn-status">
-        <span class="dot" id="connDot"></span>
-        <span id="connText">ยังไม่ได้เชื่อมต่อ</span>
-      </div>
-      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">🌙</button>
+    <div class="conn-status">
+      <span class="dot" id="connDot"></span>
+      <span id="connText">ยังไม่ได้เชื่อมต่อ</span>
     </div>
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">🌙</button>
   </header>
 
   <div class="alert-stack" id="alertStack"></div>
@@ -207,7 +207,7 @@
     <label>ค่าไฟ (บาท/หน่วย)</label>
     <input id="cfgRate" type="number" step="0.01" value="4.40" style="max-width:80px;">
     <button class="btn-connect" id="btnConnect" onclick="handleConnectClick()">เชื่อมต่อ</button>
-    <div class="config-hint">ค่าเชื่อมต่อฝังไว้ใน DEFAULT_CONFIG แล้ว กดปุ่ม "เชื่อมต่อ" เพื่อเริ่มใช้งาน</div>
+    <div class="config-hint">ค่าเชื่อมต่อ (Broker Host/Username/Password/Prefix) ถูกฝังไว้ใน DEFAULT_CONFIG ที่ต้นไฟล์แล้ว แก้ไขได้ที่นั่น กดปุ่ม "เชื่อมต่อ" เพื่อเริ่มใช้งาน</div>
   </div>
 
   <div class="config-panel" id="geoPanel">
@@ -221,11 +221,12 @@
       <input id="geoEnabled" type="checkbox" onchange="onGeoEnabledChange()">
       เปิดใช้งานเปิด/ปิดอัตโนมัติตามระยะ
     </label>
+    <div class="config-hint">กำหนดว่าอุปกรณ์ไหนเปิด/ปิดตอนระยะกี่เมตรได้ที่หน้า "ตั้งค่ากฎเปิด/ปิดตามระยะ" (กฎจะแชร์กันระหว่างสองหน้านี้ผ่าน localStorage ของเบราว์เซอร์ ต้องเปิดจากที่เดียวกัน/โดเมนเดียวกัน) • ต้องกดยอมรับให้เว็บนี้เข้าถึงตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน • Geolocation อาจใช้ไม่ได้ถ้าเปิดไฟล์ผ่าน file:// โดยตรงในบางเบราว์เซอร์ ลองรันผ่าน localhost หรือ HTTPS หากอ่านตำแหน่งไม่ได้</div>
   </div>
 
   <div class="config-panel" id="dbPanel">
     <button class="btn-connect" onclick="connectHistoryDb()">เชื่อมต่อฐานข้อมูล</button>
-    <div class="config-hint">กดปุ่มนี้เพื่อซิงค์กราฟประวัติข้ามเครื่อง</div>
+    <div class="config-hint">ค่า History API URL / Token ถูกฝังไว้ใน DEFAULT_CONFIG ที่ต้นไฟล์แล้ว แก้ไขได้ที่นั่น กดปุ่มนี้เพื่อให้กราฟย้อนหลัง (รายชั่วโมง/รายวัน/สัดส่วนอุปกรณ์) ซิงค์ข้ามเครื่อง/มือถือ • ถ้าไม่กด ระบบจะยังเก็บกราฟไว้ในเบราว์เซอร์นี้เครื่องเดียวเหมือนเดิม</div>
     <div style="font-family:monospace; font-size:11px; color:var(--text-dim); margin-top:4px;" id="histSyncStatus"></div>
   </div>
 
@@ -234,6 +235,7 @@
     <button class="btn-connect" id="btnIrLearnOn" onclick="startIrLearn('ON')">เรียนรู้ปุ่ม "เปิดแอร์"</button>
     <button class="btn-connect" id="btnIrLearnOff" onclick="startIrLearn('OFF')">เรียนรู้ปุ่ม "ปิดแอร์"</button>
     <button class="btn-connect" id="btnIrCancel" onclick="cancelIrLearn()" style="display:none;">ยกเลิก</button>
+    <div class="config-hint">กดปุ่มเรียนรู้ แล้วชี้รีโมทแอร์ตัวจริงมาที่ตัวรับ IR ของบอร์ด (ห่างประมาณ 5-10 ซม.) กดปุ่มที่ต้องการภายใน 30 วินาที บอร์ดจะจำสัญญาณไว้ แล้วสวิตช์ "แอร์" ด้านล่างจะยิงสัญญาณที่เรียนรู้ไปให้แอร์ผ่าน IR LED (ตัวส่ง) • ปุ่มเปิดกับปุ่มปิดของแอร์ส่วนใหญ่ส่งรหัสไม่เหมือนกัน ควรเรียนรู้ทั้งสองปุ่ม</div>
     <div style="font-family:monospace; font-size:12px; margin-top:6px; color:var(--text-secondary);" id="irStatus">รอเชื่อมต่อบอร์ด...</div>
   </div>
 
@@ -245,7 +247,7 @@
 
   <div class="cost-summary">
     <div class="cost-item">
-      <div class="cost-label">พลังงานรวม (ตั้งแต่รีสตาร์ท)</div>
+      <div class="cost-label">พลังงานรวม (ตั้งแต่บอร์ดล่าสุดรีสตาร์ท)</div>
       <div class="cost-value" id="totalKwh">0.000 kWh</div>
     </div>
     <div class="cost-item">
@@ -259,7 +261,6 @@
     </div>
   </div>
 
-  <!-- กราฟเรียลไทม์ -->
   <div class="chart-card">
     <div class="chart-head">
       <span>การใช้พลังงานแบบเรียลไทม์ (วัตต์)</span>
@@ -291,7 +292,6 @@
     <div class="chart-legend" id="chartLegend"></div>
   </div>
 
-  <!-- ประวัติการใช้ไฟ -->
   <div class="history-card">
     <div class="history-head">
       <div style="font-weight:600; font-size:14px;">ประวัติการใช้ไฟ</div>
@@ -302,6 +302,7 @@
       </div>
     </div>
 
+    <!-- แท็บ วันนี้ -->
     <div id="todayView">
       <div style="font-family:monospace; font-size:11px; color:var(--warn-color); margin-bottom:4px;" id="peakText">ช่วงพีคของวันนี้: -</div>
       <div style="font-family:monospace; font-size:12px; color:var(--text-secondary);" id="todayTotalText">รวมวันนี้: 0.000 kWh · ฿0.00</div>
@@ -326,6 +327,7 @@
       <div id="rankList"></div>
     </div>
 
+    <!-- แท็บ รายเดือน -->
     <div id="monthView" style="display:none;">
       <div class="month-config-row">
         <span>เดือน</span>
@@ -358,25 +360,27 @@
     </div>
   </div>
 
-  <!-- โซนการ์ดอุปกรณ์ พร้อมปุ่ม + เพิ่มอุปกรณ์ใหม่ -->
+  <!-- โซนอุปกรณ์ + ปุ่มเพิ่มอุปกรณ์ใหม่ -->
   <div class="rack-header">
     <div class="rack-label">อุปกรณ์</div>
     <button class="btn-add" onclick="openAddModal()"><span>+</span> เพิ่มอุปกรณ์ใหม่</button>
   </div>
-
-  <div class="breaker-grid" id="breakerGrid"></div>
+  <div class="breaker-grid" id="breakerGrid">
+    <div style="font-family:monospace; font-size:12px; color:var(--text-dim);">กรอกข้อมูล broker ด้านบนแล้วกด "เชื่อมต่อ" เพื่อแสดงอุปกรณ์</div>
+  </div>
 
   <div class="util-row">
     <button class="util-btn" onclick="exportCsv()">⬇ ส่งออก CSV</button>
   </div>
 
   <footer>
-    Topic ควบคุม: <code id="footCtrl">myhome/&lt;device&gt;/set</code><br>
-    Topic สถานะรวม: <code id="footStatus">myhome/telemetry</code>
+    Topic ควบคุม: <code id="footCtrl">-</code><br>
+    Topic สถานะรวม: <code id="footStatus">-</code><br>
+    หมายเหตุ: อุปกรณ์เริ่มต้นถูกตั้งค่าจาก ESP32 หรือสามารถเพิ่ม/ลบอุปกรณ์ชั่วคราวผ่านหน้าเว็บนี้ได้
   </footer>
 </div>
 
-<!-- Modal Popup สำหรับเพิ่มอุปกรณ์ -->
+<!-- Modal สำหรับเพิ่มอุปกรณ์ -->
 <div class="modal-overlay hidden" id="addModal">
   <div class="modal-card">
     <div class="modal-head">
@@ -390,14 +394,14 @@
       </div>
       <div class="form-group">
         <label>ชื่ออุปกรณ์</label>
-        <input type="text" id="addDevName" required placeholder="เช่น โคมไฟ A, พัดลมตั้งโต๊ะ">
+        <input type="text" id="addDevName" required placeholder="เช่น โคมไฟ A, พัดลมโต๊ะทำงาน">
       </div>
       <div class="form-group">
         <label>ไอคอน (Emoji หรือ URL รูปภาพ)</label>
         <input type="text" id="addDevIcon" placeholder="เช่น 💡 หรือ https://.../image.png">
       </div>
       <div class="form-group">
-        <label>หรือ อัปโหลดไฟล์รูปภาพจากเครื่อง</label>
+        <label>หรือ อัปโหลดรูปภาพจากเครื่อง</label>
         <input type="file" id="addDevFile" accept="image/*" onchange="handleModalImageUpload(event)">
       </div>
       <div style="display:flex; gap:10px;">
@@ -421,6 +425,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
 <script src="geo-rules.js"></script>
 <script>
+  // ---------- ตั้งค่าทั่วไป ----------
   const DEFAULT_CONFIG = {
     host: "a130eedbb798414f983f14f784934179.s1.eu.hivemq.cloud",
     port: "8884",
@@ -439,6 +444,7 @@
   let client = null;
   let connected = false;
 
+  // devices[id] = { name, watt, state, kwh, icon, pin }
   let devices = {
     aircon: { name: "แอร์", watt: 1200, state: false, kwh: 0, icon: "❄️", pin: 19 },
     light:  { name: "ไฟในบ้าน", watt: 10, state: false, kwh: 0, icon: "💡", pin: 21 },
@@ -450,11 +456,13 @@
   const COLORS = ['#0D9488', '#EA580C', '#0284C7', '#7C3AED', '#EC4899', '#8B5CF6', '#10B981'];
   const DEVICE_NAMES = { aircon: "แอร์", light: "ไฟในบ้าน", light2: "ไฟนอกบ้าน", fan: "พัดลม", plug: "ปลั๊กไฟทั่วไป" };
 
-  let historyData = {};
+  let historyData = {}; // สำหรับกราฟเรียลไทม์ (เก็บย้อนหลัง 30 จุด ต่ออุปกรณ์)
   let lastTelemetryAt = 0;
+
   const TIMER_KEY = "mqtt_dashboard_timers";
   let deviceTimers = {};
   let timerTickHandle = null;
+
   const THEME_KEY = "mqtt_dashboard_theme";
 
   let geoLat = null, geoLng = null, geoEnabled = false;
@@ -469,43 +477,71 @@
 
   function makeBoundaryTracker() { return { side: null, pending: null, streak: 0 }; }
   let ruleTrackers = {};
+
   let uploadedModalImage = "";
 
-  function cssVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+  function cssVar(name) {
+    return getComputedStyle(document.body).getPropertyValue(name).trim();
+  }
 
   function loadConfig() {
     const saved = localStorage.getItem("mqtt_dashboard_config");
-    let cfg = saved ? JSON.parse(saved) : {};
+    let cfg = {};
+    if (saved) {
+      try { cfg = JSON.parse(saved); } catch (e) { cfg = {}; }
+    }
     document.getElementById("cfgRate").value = cfg.rate || DEFAULT_CONFIG.rate || 4.40;
     prefix = DEFAULT_CONFIG.prefix || "myhome";
   }
 
   function saveConfig() {
-    localStorage.setItem("mqtt_dashboard_config", JSON.stringify({ rate: document.getElementById("cfgRate").value }));
+    const cfg = {
+      rate: document.getElementById("cfgRate").value
+    };
+    localStorage.setItem("mqtt_dashboard_config", JSON.stringify(cfg));
   }
 
   function setConnected(isConnected) {
     connected = isConnected;
-    document.getElementById("connDot").classList.toggle("live", isConnected);
-    document.getElementById("connText").textContent = isConnected ? "เชื่อมต่อ MQTT Broker แล้ว" : "ไม่ได้เชื่อมต่อ";
+    const dot = document.getElementById("connDot");
+    const text = document.getElementById("connText");
+    dot.classList.toggle("live", isConnected);
+    text.textContent = isConnected ? "เชื่อมต่อ MQTT Broker แล้ว" : "ไม่ได้เชื่อมต่อ";
     document.getElementById("btnConnect").textContent = isConnected ? "ตัดการเชื่อมต่อ" : "เชื่อมต่อ";
   }
 
   function handleConnectClick() {
-    if (connected) { if (client) client.end(true); setConnected(false); return; }
+    if (connected) {
+      if (client) client.end(true);
+      setConnected(false);
+      return;
+    }
     connectMqtt();
   }
 
   function connectMqtt() {
+    const host = (DEFAULT_CONFIG.host || "").trim();
+    const port = (DEFAULT_CONFIG.port || "8884").trim();
+    const user = (DEFAULT_CONFIG.user || "").trim();
+    const pass = (DEFAULT_CONFIG.pass || "").trim();
+    prefix = (DEFAULT_CONFIG.prefix || "myhome").trim();
     rate = parseFloat(document.getElementById("cfgRate").value) || 4.40;
+
+    if (!host || !user || !pass) {
+      alert("ยังไม่ได้ตั้งค่า Broker Host / Username / Password ใน DEFAULT_CONFIG ที่ต้นไฟล์");
+      return;
+    }
+
     saveConfig();
-    const url = `wss://${DEFAULT_CONFIG.host}:${DEFAULT_CONFIG.port}/mqtt`;
+
+    const url = `wss://${host}:${port}/mqtt`;
 
     client = mqtt.connect(url, {
-      username: DEFAULT_CONFIG.user,
-      password: DEFAULT_CONFIG.pass,
+      username: user,
+      password: pass,
       clean: true,
-      reconnectPeriod: 3000
+      reconnectPeriod: 3000,
+      connectTimeout: 8000
     });
 
     client.on('connect', () => {
@@ -513,10 +549,21 @@
       client.subscribe(`${prefix}/telemetry`);
       client.subscribe(`${prefix}/+/state`);
       client.subscribe(`${prefix}/ir/status`);
+      document.getElementById("footCtrl").textContent = `${prefix}/<device>/set`;
+      document.getElementById("footStatus").textContent = `${prefix}/telemetry`;
     });
 
     client.on('reconnect', () => setConnected(false));
     client.on('close', () => setConnected(false));
+    client.on('error', (err) => {
+      console.error("MQTT error:", err);
+      setConnected(false);
+      const msg = (err && err.message) || "";
+      if (msg.includes("Not authorized") || msg.includes("Bad username or password") || msg.includes("not authorized")) {
+        client.end(true);
+        alert("เชื่อมต่อไม่สำเร็จ: Not authorized\nกรุณาตรวจสอบ Username/Password และสถานะ Broker อีกครั้ง");
+      }
+    });
 
     client.on('message', (topic, payload) => {
       handleMessage(topic, payload.toString());
@@ -525,10 +572,12 @@
 
   function handleMessage(topic, message) {
     const parts = topic.split('/');
+
     if (parts.length === 3 && parts[1] === 'ir' && parts[2] === 'status') {
-      try { renderIrStatus(JSON.parse(message)); } catch (e) {}
+      try { renderIrStatus(JSON.parse(message)); } catch (e) { console.error("แปลงสถานะ IR ไม่สำเร็จ:", e); }
       return;
     }
+
     if (parts.length === 2 && parts[1] === 'telemetry') {
       try {
         const data = JSON.parse(message);
@@ -549,9 +598,12 @@
         updateChartHistory();
         renderAlerts();
         recordHistoryDelta();
-      } catch (e) {}
+      } catch (e) {
+        console.error("แปลง telemetry JSON ไม่สำเร็จ:", e);
+      }
       return;
     }
+
     if (parts.length === 3 && parts[2] === 'state') {
       const id = parts[1];
       if (devices[id]) {
@@ -564,7 +616,9 @@
   function startIrLearn(target) {
     if (!connected || !client) { alert("ยังไม่ได้เชื่อมต่อ MQTT"); return; }
     client.publish(`${prefix}/ir/learn`, target);
-    document.getElementById("irStatus").textContent = "ส่งคำสั่งไปที่บอร์ดแล้ว รอการตอบกลับ...";
+    const el = document.getElementById("irStatus");
+    el.style.color = "var(--text-secondary)";
+    el.textContent = "ส่งคำสั่งไปที่บอร์ดแล้ว รอการตอบกลับ...";
   }
 
   function cancelIrLearn() {
@@ -579,8 +633,33 @@
     document.getElementById("btnIrLearnOn").disabled = waiting;
     document.getElementById("btnIrLearnOff").disabled = waiting;
 
-    let text = waiting ? `⏳ กำลังรอสัญญาณ... กดปุ่ม "${tName}" ที่รีโมท` : (s.state === "captured" ? `✓ บันทึกปุ่ม "${tName}" เรียบร้อย` : "พร้อมเรียนรู้");
+    let text, color = "var(--text-secondary)";
+    if (waiting) {
+      text = `⏳ กำลังรอสัญญาณ... ชี้รีโมทมาที่ตัวรับแล้วกดปุ่ม "${tName}" (ภายใน 30 วินาที)`;
+      color = "var(--warn-color)";
+    } else if (s.state === "captured") {
+      const n = s.target === "ON" ? s.onLen : s.offLen;
+      text = `✓ จับสัญญาณปุ่ม "${tName}" ได้แล้ว (${n} ค่า) และบันทึกไว้ในบอร์ดแล้ว`;
+      color = "var(--on-color)";
+    } else if (s.state === "timeout") {
+      text = `หมดเวลา ไม่ได้รับสัญญาณปุ่ม "${tName}" ลองใหม่อีกครั้ง`;
+      color = "var(--danger-color)";
+    } else if (s.state === "overflow") {
+      text = "สัญญาณยาวเกินที่บอร์ดเก็บได้ ลองกดใหม่อีกครั้ง";
+      color = "var(--danger-color)";
+    } else if (s.state === "error") {
+      text = "เกิดข้อผิดพลาดตอนอ่านสัญญาณ ลองใหม่อีกครั้ง";
+      color = "var(--danger-color)";
+    } else if (s.state === "cancelled") {
+      text = "ยกเลิกการเรียนรู้แล้ว";
+    } else {
+      text = "พร้อมเรียนรู้";
+    }
+    if (!waiting) {
+      text += ` · ปุ่มเปิด: ${s.onLearned ? "เรียนรู้แล้ว" : "ค่าเริ่มต้น"} · ปุ่มปิด: ${s.offLearned ? "เรียนรู้แล้ว" : "ค่าเริ่มต้น (ยังไม่ได้เรียนรู้)"}`;
+    }
     el.textContent = text;
+    el.style.color = color;
   }
 
   function toggleDevice(id) {
@@ -592,15 +671,23 @@
     client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF");
   }
 
-  // --- ฟังก์ชัน Modal และ เพิ่ม/ลบ อุปกรณ์ ---
-  function openAddModal() { document.getElementById("addModal").classList.remove("hidden"); }
-  function closeAddModal() { document.getElementById("addModal").classList.add("hidden"); uploadedModalImage = ""; }
+  // ---------- ฟังก์ชัน Modal & เพิ่ม/ลบ อุปกรณ์ ----------
+  function openAddModal() {
+    document.getElementById("addModal").classList.remove("hidden");
+  }
+
+  function closeAddModal() {
+    document.getElementById("addModal").classList.add("hidden");
+    uploadedModalImage = "";
+  }
 
   function handleModalImageUpload(e) {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = function(event) { uploadedModalImage = event.target.result; };
+      reader.onload = function(event) {
+        uploadedModalImage = event.target.result;
+      };
       reader.readAsDataURL(file);
     }
   }
@@ -613,14 +700,19 @@
     const pin = parseInt(document.getElementById("addDevPin").value);
     const watt = parseFloat(document.getElementById("addDevWatt").value);
 
-    if (devices[id]) { alert("❌ ID อุปกรณ์นี้มีอยู่แล้ว"); return; }
+    if (devices[id]) {
+      alert("❌ ID อุปกรณ์นี้มีอยู่แล้ว กรุณาใช้ ID อื่น");
+      return;
+    }
+
+    const finalIcon = uploadedModalImage || iconInput || "⚡";
 
     devices[id] = {
       name: name,
       watt: watt,
       state: false,
       kwh: 0,
-      icon: uploadedModalImage || iconInput || "⚡",
+      icon: finalIcon,
       pin: pin
     };
 
@@ -632,8 +724,8 @@
   }
 
   function deleteDevice(e, id) {
-    e.stopPropagation(); // หยุด Event ไม่ให้ทะลุไปโดนปุ่มสวิตช์
-    if (confirm(`คุณต้องการลบอุปกรณ์ [${devices[id].name}] ใช่หรือไม่?`)) {
+    e.stopPropagation(); // กัน event คลิกทะลุไปสวิตช์
+    if (confirm(`คุณต้องการลบอุปกรณ์ [${devices[id].name}] หรือไม่?`)) {
       delete devices[id];
       delete historyData[id];
       delete deviceTimers[id];
@@ -648,7 +740,7 @@
     const grid = document.getElementById("breakerGrid");
     const ids = Object.keys(devices);
     if (ids.length === 0) {
-      grid.innerHTML = `<div style="font-family:monospace; font-size:12px; color:var(--text-dim);">ไม่มีอุปกรณ์ สามารถกดปุ่ม "+ เพิ่มอุปกรณ์ใหม่" ด้านบน</div>`;
+      grid.innerHTML = `<div style="font-family:monospace; font-size:12px; color:var(--text-dim);">ไม่มีอุปกรณ์ แสดงผลหรือกดปุ่ม "+ เพิ่มอุปกรณ์ใหม่" ด้านบน</div>`;
       return;
     }
     grid.innerHTML = "";
@@ -767,6 +859,7 @@
       line.setAttribute("d", d);
       line.setAttribute("class", "chart-line");
       line.setAttribute("stroke", color);
+      line.style.filter = `drop-shadow(0 0 3px ${color}aa)`;
       linesG.appendChild(line);
 
       const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -787,7 +880,9 @@
     if (saved) {
       try {
         const cfg = JSON.parse(saved);
-        geoLat = cfg.lat ?? null; geoLng = cfg.lng ?? null; geoEnabled = !!cfg.enabled;
+        geoLat = (cfg.lat === null || cfg.lat === undefined) ? null : cfg.lat;
+        geoLng = (cfg.lng === null || cfg.lng === undefined) ? null : cfg.lng;
+        geoEnabled = !!cfg.enabled;
       } catch (e) {}
     }
     document.getElementById("geoLat").value = geoLat !== null ? geoLat : "";
@@ -797,159 +892,457 @@
   }
 
   function saveGeoConfig() {
-    localStorage.setItem("mqtt_dashboard_geo", JSON.stringify({ lat: geoLat, lng: geoLng, enabled: geoEnabled }));
+    const cfg = { lat: geoLat, lng: geoLng, enabled: geoEnabled };
+    localStorage.setItem("mqtt_dashboard_geo", JSON.stringify(cfg));
   }
 
   function useCurrentLocationAsBoard() {
-    if (!navigator.geolocation) { alert("เบราว์เซอร์ไม่รองรับ Geolocation"); return; }
+    if (!navigator.geolocation) {
+      alert("เบราว์เซอร์นี้ไม่รองรับ Geolocation API");
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        geoLat = pos.coords.latitude; geoLng = pos.coords.longitude;
+        geoLat = pos.coords.latitude;
+        geoLng = pos.coords.longitude;
         document.getElementById("geoLat").value = geoLat.toFixed(6);
         document.getElementById("geoLng").value = geoLng.toFixed(6);
         saveGeoConfig();
-        alert("บันทึกตำแหน่งบอร์ดเรียบร้อย");
+        alert("บันทึกตำแหน่งบอร์ดจากตำแหน่งปัจจุบันเรียบร้อย: " + geoLat.toFixed(6) + ", " + geoLng.toFixed(6));
       },
-      (err) => alert("อ่านตำแหน่งไม่ได้: " + err.message),
-      { enableHighAccuracy: true }
+      (err) => {
+        alert("ไม่สามารถอ่านตำแหน่งปัจจุบันได้: " + err.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 
   function onGeoLatLngChange() {
-    geoLat = parseFloat(document.getElementById("geoLat").value) || null;
-    geoLng = parseFloat(document.getElementById("geoLng").value) || null;
+    const lat = parseFloat(document.getElementById("geoLat").value);
+    const lng = parseFloat(document.getElementById("geoLng").value);
+    geoLat = isNaN(lat) ? null : lat;
+    geoLng = isNaN(lng) ? null : lng;
     saveGeoConfig();
   }
 
   function onGeoEnabledChange() {
     geoEnabled = document.getElementById("geoEnabled").checked;
     if (geoEnabled && (geoLat === null || geoLng === null)) {
-      alert('ระบุตำแหน่งบอร์ดก่อนเปิดใช้งาน');
+      alert('กรุณาระบุตำแหน่งบอร์ดก่อนเปิดใช้งาน');
       document.getElementById("geoEnabled").checked = false;
       geoEnabled = false;
+      saveGeoConfig();
+      return;
     }
     if (geoEnabled) startGeoWatch(); else stopGeoWatch();
     saveGeoConfig();
   }
 
   function startGeoWatch() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      document.getElementById("geoStatus").textContent = "เบราว์เซอร์นี้ไม่รองรับ Geolocation";
+      return;
+    }
     if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
+    ruleTrackers = {};
+    distanceBuffer = [];
     geoWatchId = navigator.geolocation.watchPosition(
       handlePositionUpdate,
       (err) => { document.getElementById("geoStatus").textContent = "อ่านตำแหน่งไม่ได้: " + err.message; },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
     );
   }
 
   function stopGeoWatch() {
-    if (geoWatchId !== null) { navigator.geolocation.clearWatch(geoWatchId); geoWatchId = null; }
+    if (geoWatchId !== null) {
+      navigator.geolocation.clearWatch(geoWatchId);
+      geoWatchId = null;
+    }
     document.getElementById("geoDistance").textContent = "--";
     document.getElementById("geoStatus").textContent = "ยังไม่ได้เปิดใช้งาน";
+    ruleTrackers = {};
   }
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === GEO_RULES_KEY) ruleTrackers = {};
+  });
 
   function calcDistanceMeters(lat1, lng1, lat2, lng2) {
     const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  function median(arr) {
+    const s = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
   }
 
   function handlePositionUpdate(pos) {
     if (geoLat === null || geoLng === null) return;
     const rawDist = calcDistanceMeters(geoLat, geoLng, pos.coords.latitude, pos.coords.longitude);
-    document.getElementById("geoDistance").textContent = rawDist < 1000 ? `${rawDist.toFixed(0)} ม.` : `${(rawDist / 1000).toFixed(2)} กม.`;
-    document.getElementById("geoStatus").textContent = `กำลังติดตามระยะ • GPS ±${(pos.coords.accuracy||0).toFixed(0)} ม.`;
+    const accuracy = pos.coords.accuracy || 9999;
+
+    if (accuracy > GEO_MAX_ACCURACY_M) {
+      document.getElementById("geoStatus").textContent =
+        `สัญญาณ GPS ไม่แม่นยำพอ (±${accuracy.toFixed(0)} ม.) กำลังรอสัญญาณที่ดีกว่า`;
+      return;
+    }
+
+    distanceBuffer.push(rawDist);
+    if (distanceBuffer.length > GEO_BUFFER_SIZE) distanceBuffer.shift();
+    const smoothDist = median(distanceBuffer);
+
+    document.getElementById("geoDistance").textContent =
+      smoothDist < 1000 ? `${smoothDist.toFixed(0)} ม.` : `${(smoothDist / 1000).toFixed(2)} กม.`;
+
+    document.getElementById("geoStatus").textContent =
+      `กำลังติดตามระยะ • GPS ±${accuracy.toFixed(0)} ม.`;
+
+    evaluateAutoControl(smoothDist);
+  }
+
+  function setDeviceState(id, on) {
+    if (!connected || !devices[id]) return;
+    if (devices[id].state === on) return;
+    devices[id].state = on;
+    if (!on) clearDeviceTimer(id, false);
+    renderBreakers();
+    client.publish(`${prefix}/${id}/set`, on ? "ON" : "OFF");
+  }
+
+  function updateBoundary(tracker, dist, threshold) {
+    const enterBoundary = threshold;
+    const exitBoundary = threshold + GEO_HYSTERESIS_M;
+
+    let currentSide = null;
+    if (dist <= enterBoundary) currentSide = 'in';
+    else if (dist > exitBoundary) currentSide = 'out';
+
+    if (currentSide === null) { tracker.pending = null; tracker.streak = 0; return null; }
+
+    if (currentSide === tracker.pending) tracker.streak++;
+    else { tracker.pending = currentSide; tracker.streak = 1; }
+
+    if (tracker.streak < GEO_CONFIRM_COUNT) return null;
+    if (tracker.side === currentSide) return null;
+    return currentSide;
+  }
+
+  function evaluateAutoControl(dist) {
+    if (!geoEnabled || !connected) return;
+
+    const rules = loadGeoRules();
+    const crossings = rules
+      .map(rule => {
+        const tracker = ruleTrackers[rule.id] || (ruleTrackers[rule.id] = makeBoundaryTracker());
+        return { rule, tracker, cross: updateBoundary(tracker, dist, rule.distance) };
+      })
+      .filter(x => x.cross !== null);
+
+    if (crossings.length === 0) return;
+
+    const now = Date.now();
+    if (now - lastAutoActionAt < GEO_COOLDOWN_MS) return;
+
+    crossings.forEach(({ rule, tracker, cross }) => {
+      tracker.side = cross;
+      const actions = cross === 'in' ? rule.enter : rule.exit;
+      actions.forEach(a => setDeviceState(a.device, a.state));
+    });
+
+    lastAutoActionAt = now;
   }
 
   function applyTheme(theme) {
     document.body.classList.toggle('theme-dark', theme === 'dark');
-    document.getElementById('themeToggleBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
   }
 
-  function loadTheme() { applyTheme(localStorage.getItem(THEME_KEY) || 'light'); }
+  function loadTheme() {
+    applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+  }
+
   function toggleTheme() {
     const next = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
     applyTheme(next);
     localStorage.setItem(THEME_KEY, next);
+    renderTodayBars(); renderMonthBars(); renderDeviceDonut(); renderRankings();
   }
 
   function renderAlerts() {
     const stack = document.getElementById('alertStack');
     if (!stack) return;
     const alerts = [];
+
+    if (connected && lastTelemetryAt > 0) {
+      const idleSec = (Date.now() - lastTelemetryAt) / 1000;
+      if (idleSec > DEFAULT_CONFIG.staleTelemetrySec) {
+        alerts.push({ type: 'danger', icon: '⚠️',
+          text: `ไม่ได้รับข้อมูลจากบอร์ดมา ${idleSec.toFixed(0)} วินาทีแล้ว สถานะอุปกรณ์ที่แสดงอยู่อาจไม่ตรงกับความเป็นจริง` });
+      }
+    }
+
     const totalWattOn = Object.values(devices).reduce((sum, d) => sum + (d.state ? (d.watt || 0) : 0), 0);
     if (totalWattOn >= DEFAULT_CONFIG.maxWatt) {
-      alerts.push({ type: 'warn', icon: '🔥', text: `กำลังไฟรวมเปิดอยู่ ${totalWattOn} W เกินเกณฑ์ ${DEFAULT_CONFIG.maxWatt} W` });
+      alerts.push({ type: 'warn', icon: '🔥',
+        text: `กำลังไฟรวมที่เปิดใช้งานอยู่ตอนนี้สูงถึง ${totalWattOn} W (เกินเกณฑ์ ${DEFAULT_CONFIG.maxWatt} W) เสี่ยงเบรกเกอร์ตัด` });
     }
-    stack.innerHTML = alerts.map(a => `<div class="alert-banner ${a.type}"><span class="alert-icon">${a.icon}</span><span>${a.text}</span></div>`).join("");
+
+    stack.innerHTML = alerts.map(a => `
+      <div class="alert-banner ${a.type}"><span class="alert-icon">${a.icon}</span><span>${a.text}</span></div>
+    `).join("");
   }
+
+  setInterval(() => { if (connected) renderAlerts(); }, 5000);
 
   function killSwitch() {
-    if (!connected) return;
-    Object.keys(devices).forEach(id => {
+    if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
+    const onIds = Object.keys(devices).filter(id => devices[id].state);
+    if (onIds.length === 0) { alert('ไม่มีอุปกรณ์ที่เปิดอยู่ในขณะนี้'); return; }
+    if (!confirm(`ยืนยันปิดอุปกรณ์ทั้งหมด ${onIds.length} รายการทันทีหรือไม่?`)) return;
+    onIds.forEach(id => {
       devices[id].state = false;
       client.publish(`${prefix}/${id}/set`, "OFF");
+      clearDeviceTimer(id, false);
     });
     renderBreakers();
+    renderAlerts();
   }
 
-  function sceneComeHome() { alert("เปิดการตั้งค่าตามระยะเข้าใกล้บ้าน"); }
-  function sceneLeaveHome() { alert("เปิดการตั้งค่าตามระยะออกจากบ้าน"); }
+  function sceneComeHome() {
+    if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
+    const rules = loadGeoRules();
+    if (rules.length === 0) { alert('ยังไม่มีกฎเลย ไปตั้งค่าที่หน้า "ตั้งค่ากฎเปิด/ปิดตามระยะ" ก่อน'); return; }
+    [...rules].sort((a, b) => b.distance - a.distance)
+      .forEach(rule => rule.enter.forEach(a => setDeviceState(a.device, a.state)));
+  }
+
+  function sceneLeaveHome() {
+    if (!connected) { alert('ยังไม่ได้เชื่อมต่อ MQTT Broker'); return; }
+    const rules = loadGeoRules();
+    if (rules.length === 0) { alert('ยังไม่มีกฎเลย ไปตั้งค่าที่หน้า "ตั้งค่ากฎเปิด/ปิดตามระยะ" ก่อน'); return; }
+    [...rules].sort((a, b) => a.distance - b.distance)
+      .forEach(rule => rule.exit.forEach(a => setDeviceState(a.device, a.state)));
+  }
+
+  function loadDeviceTimers() {
+    try {
+      const saved = localStorage.getItem(TIMER_KEY);
+      deviceTimers = saved ? JSON.parse(saved) : {};
+    } catch (e) { deviceTimers = {}; }
+    if (Object.keys(deviceTimers).length > 0) ensureTimerTick();
+  }
+
+  function saveDeviceTimers() {
+    localStorage.setItem(TIMER_KEY, JSON.stringify(deviceTimers));
+  }
 
   function setDeviceTimer(id, minutes) {
     deviceTimers[id] = Date.now() + minutes * 60000;
+    saveDeviceTimers();
+    ensureTimerTick();
     renderBreakers();
   }
+
   function clearDeviceTimer(id, rerender = true) {
+    if (deviceTimers[id] === undefined) return;
     delete deviceTimers[id];
+    saveDeviceTimers();
     if (rerender) renderBreakers();
   }
+
+  function ensureTimerTick() {
+    if (timerTickHandle) return;
+    timerTickHandle = setInterval(tickDeviceTimers, 1000);
+  }
+
+  function tickDeviceTimers() {
+    if (Object.keys(deviceTimers).length === 0) {
+      clearInterval(timerTickHandle);
+      timerTickHandle = null;
+      return;
+    }
+    const now = Date.now();
+    let changed = false;
+    Object.keys(deviceTimers).forEach(id => {
+      if (now >= deviceTimers[id]) {
+        if (connected && client) client.publish(`${prefix}/${id}/set`, "OFF");
+        if (devices[id]) devices[id].state = false;
+        delete deviceTimers[id];
+        changed = true;
+      }
+    });
+    if (changed) saveDeviceTimers();
+    renderBreakers();
+  }
+
   function formatCountdown(ms) {
-    const s = Math.max(0, Math.round(ms / 1000));
-    return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+    const totalSec = Math.max(0, Math.round(ms / 1000));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  function exportCsv() {
+    let csv = "Device,Watt,kWh,Cost\n";
+    Object.keys(devices).forEach(id => {
+      const d = devices[id];
+      csv += `${d.name},${d.watt},${(d.kwh || 0).toFixed(4)},${((d.kwh || 0) * rate).toFixed(2)}\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "energy-report.csv";
+    a.click();
   }
 
   const HIST_KEY = "energy_history_v1";
   let lastDeviceKwh = {};
   let hist = { hourly: {}, daily: {}, deviceDaily: {}, budget: null };
-  function todayKey() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+  function todayKey(d = new Date()) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
 
   function loadHistory() {
     try {
       const saved = localStorage.getItem(HIST_KEY);
       if (saved) hist = Object.assign({ hourly: {}, daily: {}, deviceDaily: {}, budget: null }, JSON.parse(saved));
-    } catch (e) {}
+    } catch (e) { console.error("โหลดประวัติไม่สำเร็จ:", e); }
+
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 35);
+    Object.keys(hist.hourly).forEach(k => { if (new Date(k) < cutoff) delete hist.hourly[k]; });
+
+    if (hist.budget !== null && hist.budget !== undefined) {
+      document.getElementById("budgetInput").value = hist.budget;
+    }
+    const mp = document.getElementById("monthPicker");
+    if (!mp.value) mp.value = todayKey().slice(0, 7);
   }
 
-  function saveHistory() { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); }
+  function saveHistoryLocal() {
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); }
+    catch (e) { console.error("บันทึกประวัติไม่สำเร็จ:", e); }
+  }
+
+  function saveHistory() {
+    saveHistoryLocal();
+    queueHistorySync();
+  }
+
+  let histApiUrl = "";
+  let histApiToken = "";
+  let histSyncTimer = null;
+  let histSyncing = false;
+
+  function setHistSyncStatus(text) {
+    const el = document.getElementById("histSyncStatus");
+    if (el) el.textContent = text;
+  }
+
+  function historyEndpoint() {
+    return `${histApiUrl.replace(/\/$/, '')}/api/history?token=${encodeURIComponent(histApiToken)}`;
+  }
+
+  function connectHistoryDb() {
+    histApiUrl = (DEFAULT_CONFIG.histUrl || "").trim();
+    histApiToken = (DEFAULT_CONFIG.histToken || "").trim();
+    if (!histApiUrl || !histApiToken) {
+      alert("ยังไม่ได้ตั้งค่า History API URL / Token ใน DEFAULT_CONFIG ที่ต้นไฟล์");
+      return;
+    }
+    fetchHistoryFromServer();
+  }
+
+  async function fetchHistoryFromServer() {
+    if (!histApiUrl || !histApiToken) return;
+    try {
+      setHistSyncStatus("กำลังโหลดกราฟจากฐานข้อมูล...");
+      const r = await fetch(historyEndpoint());
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const serverHist = await r.json();
+      hist = Object.assign({ hourly: {}, daily: {}, deviceDaily: {}, budget: null }, serverHist);
+      saveHistoryLocal();
+      if (hist.budget !== null && hist.budget !== undefined) {
+        document.getElementById("budgetInput").value = hist.budget;
+      }
+      renderTodayBars(); renderMonthBars(); renderDeviceDonut(); renderRankings(); updateEnergyAdvice();
+      setHistSyncStatus("ซิงค์ล่าสุด: " + new Date().toLocaleTimeString('th-TH'));
+    } catch (e) {
+      console.error("โหลดประวัติจากฐานข้อมูลไม่สำเร็จ:", e);
+      setHistSyncStatus("โหลดจากฐานข้อมูลไม่สำเร็จ (ใช้ข้อมูลในเครื่องแทน)");
+    }
+  }
+
+  function queueHistorySync() {
+    if (!histApiUrl || !histApiToken) return;
+    clearTimeout(histSyncTimer);
+    histSyncTimer = setTimeout(pushHistoryToServer, 3000);
+  }
+
+  async function pushHistoryToServer() {
+    if (!histApiUrl || !histApiToken || histSyncing) return;
+    histSyncing = true;
+    try {
+      setHistSyncStatus("กำลังบันทึกลงฐานข้อมูล...");
+      const r = await fetch(historyEndpoint(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hist)
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setHistSyncStatus("ซิงค์ล่าสุด: " + new Date().toLocaleTimeString('th-TH'));
+    } catch (e) {
+      console.error("บันทึกประวัติลงฐานข้อมูลไม่สำเร็จ:", e);
+      setHistSyncStatus("บันทึกลงฐานข้อมูลไม่สำเร็จ");
+    } finally {
+      histSyncing = false;
+    }
+  }
 
   function recordHistoryDelta() {
-    const dKey = todayKey();
-    const hour = new Date().getHours();
+    const now = new Date();
+    const dKey = todayKey(now);
+    const hour = now.getHours();
+
     if (!hist.hourly[dKey]) hist.hourly[dKey] = new Array(24).fill(0);
     if (!hist.deviceDaily[dKey]) hist.deviceDaily[dKey] = {};
 
     let totalDelta = 0;
     Object.keys(devices).forEach(id => {
-      const cur = devices[id].kwh || 0;
-      const prev = lastDeviceKwh[id];
-      if (prev !== undefined && cur >= prev) {
-        const delta = cur - prev;
-        if (delta > 0) {
-          totalDelta += delta;
-          hist.deviceDaily[dKey][id] = (hist.deviceDaily[dKey][id] || 0) + delta;
-        }
+      const currentKwh = devices[id].kwh || 0;
+      const prevKwh = lastDeviceKwh[id];
+      let delta = 0;
+      if (prevKwh !== undefined && currentKwh >= prevKwh) {
+        delta = currentKwh - prevKwh;
       }
-      lastDeviceKwh[id] = cur;
+      lastDeviceKwh[id] = currentKwh;
+
+      if (delta > 0) {
+        totalDelta += delta;
+        hist.deviceDaily[dKey][id] = (hist.deviceDaily[dKey][id] || 0) + delta;
+      }
     });
 
     if (totalDelta > 0) {
       hist.hourly[dKey][hour] += totalDelta;
       hist.daily[dKey] = (hist.daily[dKey] || 0) + totalDelta;
       saveHistory();
-      renderTodayBars(); renderMonthBars(); renderDeviceDonut(); renderRankings();
+      renderTodayBars();
+      renderMonthBars();
+      renderDeviceDonut();
+      renderRankings();
+      updateBudget();
+      updateEnergyAdvice();
     }
   }
 
@@ -960,52 +1353,305 @@
     document.getElementById("monthView").style.display = t === 'month' ? 'block' : 'none';
   }
 
-  function onBudgetChange() { hist.budget = parseFloat(document.getElementById("budgetInput").value) || null; saveHistory(); }
+  function onBudgetChange() {
+    hist.budget = parseFloat(document.getElementById("budgetInput").value) || null;
+    saveHistory();
+    updateBudget();
+    updateEnergyAdvice();
+  }
 
   function renderTodayBars() {
     const svg = document.getElementById("todayBarSvg");
     svg.innerHTML = "";
-    const hoursData = hist.hourly[todayKey()] || new Array(24).fill(0);
+    const dKey = todayKey();
+    const hoursData = hist.hourly[dKey] || new Array(24).fill(0);
     const maxVal = Math.max(...hoursData, 0.1);
 
+    let p1=0,p2=0,p3=0,p4=0;
+    hoursData.forEach((v,h) => {
+      if (h>=6 && h<12) p1+=v; else if (h>=12 && h<18) p2+=v; else if (h>=18 && h<22) p3+=v; else p4+=v;
+    });
+    document.getElementById("p1").textContent = p1.toFixed(3)+" kWh";
+    document.getElementById("p2").textContent = p2.toFixed(3)+" kWh";
+    document.getElementById("p3").textContent = p3.toFixed(3)+" kWh";
+    document.getElementById("p4").textContent = p4.toFixed(3)+" kWh";
+
+    const totalToday = hoursData.reduce((a,b)=>a+b,0);
+    document.getElementById("todayTotalText").textContent = `รวมวันนี้: ${totalToday.toFixed(3)} kWh · ฿${(totalToday*rate).toFixed(2)}`;
+
+    let peakHour=0, maxPeak=0;
+    hoursData.forEach((v,h) => { if (v>maxPeak) { maxPeak=v; peakHour=h; } });
+    document.getElementById("peakText").textContent = maxPeak > 0
+      ? `ช่วงพีคของวันนี้: ${String(peakHour).padStart(2,'0')}:00-${String((peakHour+1)%24).padStart(2,'0')}:00 (${maxPeak.toFixed(3)} kWh)`
+      : `ช่วงพีคของวันนี้: -`;
+
     hoursData.forEach((val,i) => {
-      const x = i*20+8, height = (val/maxVal)*110, y = 130-height;
+      const x = i*20+8;
+      const height = (val/maxVal)*110;
+      const y = 130-height;
+      const isPeak = val === maxPeak && val > 0;
       const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
       rect.setAttribute("x",x); rect.setAttribute("y",y); rect.setAttribute("width",14); rect.setAttribute("height",height);
-      rect.setAttribute("class", "bar");
+      rect.setAttribute("class", isPeak ? "bar peak" : "bar");
       svg.appendChild(rect);
+      if (i%2===0) {
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x",x-2); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill",cssVar('--text-dim'));
+        text.textContent = String(i).padStart(2,'0');
+        svg.appendChild(text);
+      }
     });
   }
 
   function renderMonthBars() {
     const svg = document.getElementById("monthBarSvg");
     svg.innerHTML = "";
+    const monthStr = document.getElementById("monthPicker").value || todayKey().slice(0,7);
+    const [y, m] = monthStr.split('-').map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+
+    const days = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      days.push(hist.daily[key] || 0);
+    }
+    const maxVal = Math.max(...days, 0.1);
+    let maxPeak = 0; days.forEach(v => { if (v>maxPeak) maxPeak = v; });
+
+    const sumKwh = days.reduce((a,b)=>a+b,0);
+    document.getElementById("mKwh").textContent = sumKwh.toFixed(2);
+    document.getElementById("mCost").textContent = "฿"+(sumKwh*rate).toFixed(2);
+
+    const daysWithData = days.filter(v => v > 0).length || 1;
+    const forecastCost = ((sumKwh / daysWithData) * daysInMonth) * rate;
+    document.getElementById("forecastVal").textContent = "฿"+forecastCost.toFixed(2);
+
+    const budgetVal = hist.budget;
+    const budgetWrap = document.getElementById("budgetWrap");
+    if (budgetVal > 0) {
+      budgetWrap.style.display = "block";
+      const pct = Math.min(100, (forecastCost/budgetVal)*100);
+      const fill = document.getElementById("budgetFill");
+      fill.style.width = pct.toFixed(1)+"%";
+      fill.classList.toggle("warn", pct >= 80);
+      document.getElementById("budgetLabel").textContent = `${forecastCost.toFixed(2)} / ${budgetVal.toFixed(2)} บาท (${pct.toFixed(0)}%)`;
+    } else {
+      budgetWrap.style.display = "none";
+    }
+
+    days.forEach((val,i) => {
+      const x = i*(490/daysInMonth)+5;
+      const width = Math.max(3, (490/daysInMonth)-3);
+      const height = (val/maxVal)*120;
+      const yPos = 130-height;
+      const isPeak = val === maxPeak && val > 0;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x",x); rect.setAttribute("y",yPos); rect.setAttribute("width",width); rect.setAttribute("height",height);
+      rect.setAttribute("class", isPeak ? "bar peak" : "bar");
+      svg.appendChild(rect);
+      if (daysInMonth <= 31 && (i+1) % (daysInMonth > 20 ? 3 : 2) === 0) {
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x",x); text.setAttribute("y",145); text.setAttribute("font-size","8"); text.setAttribute("fill",cssVar('--text-dim'));
+        text.textContent = String(i+1).padStart(2,'0');
+        svg.appendChild(text);
+      }
+    });
+
+    renderMonthCompare(y, m, sumKwh);
   }
+
+  function renderMonthCompare(y, m, sumKwh) {
+    const el = document.getElementById('monthCompare');
+    if (!el) return;
+    let prevY = y, prevM = m - 1;
+    if (prevM < 1) { prevM = 12; prevY = y - 1; }
+    const prevDaysInMonth = new Date(prevY, prevM, 0).getDate();
+    let prevSum = 0;
+    for (let d = 1; d <= prevDaysInMonth; d++) {
+      const key = `${prevY}-${String(prevM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      prevSum += hist.daily[key] || 0;
+    }
+
+    if (prevSum <= 0) {
+      el.innerHTML = `<div style="font-family:monospace; font-size:11px; color:var(--text-dim);">ยังไม่มีข้อมูลของเดือนก่อนหน้า</div>`;
+      return;
+    }
+
+    const curCost = sumKwh * rate;
+    const prevCost = prevSum * rate;
+    const maxVal = Math.max(sumKwh, prevSum, 0.1);
+    const diffPct = ((sumKwh - prevSum) / prevSum) * 100;
+    const diffColor = diffPct > 0 ? 'var(--warn-color)' : 'var(--on-color)';
+    const diffText = diffPct > 0
+      ? `ใช้ไฟเพิ่มขึ้น ${diffPct.toFixed(1)}% เทียบกับเดือนก่อน`
+      : `ใช้ไฟลดลง ${Math.abs(diffPct).toFixed(1)}% เทียบกับเดือนก่อน`;
+
+    el.innerHTML = `
+      <div class="compare-row">
+        <span class="compare-label">เดือนนี้</span>
+        <div class="compare-bar-bg"><div class="compare-bar-fill" style="width:${Math.min(100,(sumKwh/maxVal)*100)}%; background:var(--on-color);"></div></div>
+        <span class="compare-val">${sumKwh.toFixed(2)} kWh</span>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">เดือนก่อน</span>
+        <div class="compare-bar-bg"><div class="compare-bar-fill" style="width:${Math.min(100,(prevSum/maxVal)*100)}%; background:var(--off-color);"></div></div>
+        <span class="compare-val">${prevSum.toFixed(2)} kWh</span>
+      </div>
+      <div class="compare-delta" style="color:${diffColor};">→ ${diffText} (ค่าไฟประมาณ ${curCost.toFixed(2)} บาท เทียบกับ ${prevCost.toFixed(2)} บาท)</div>
+    `;
+  }
+
+  function updateBudget() { renderMonthBars(); }
 
   function renderDeviceDonut() {
     const box = document.getElementById("deviceDonut");
-    box.innerHTML = `<div style="font-family:monospace; font-size:12px; color:var(--text-dim);">แสดงกราฟสัดส่วน</div>`;
+    const legend = document.getElementById("donutLegend");
+    box.innerHTML = "";
+    const dKey = todayKey();
+    const raw = hist.deviceDaily[dKey] || {};
+    const ids = Object.keys(devices);
+    const items = ids.map((id,i) => ({ name: devices[id].name, kwh: raw[id] || 0, color: COLORS[i % COLORS.length] }));
+    const total = items.reduce((a,b)=>a+b.kwh,0);
+
+    const size=160, radius=60, stroke=24, cx=size/2, cy=size/2;
+    const circumference = 2*Math.PI*radius;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS,"svg");
+    svg.setAttribute("viewBox",`0 0 ${size} ${size}`); svg.setAttribute("width",size); svg.setAttribute("height",size);
+
+    const bg = document.createElementNS(svgNS,"circle");
+    bg.setAttribute("cx",cx); bg.setAttribute("cy",cy); bg.setAttribute("r",radius);
+    bg.setAttribute("fill","none"); bg.setAttribute("stroke","var(--panel-alt)"); bg.setAttribute("stroke-width",stroke);
+    svg.appendChild(bg);
+
+    let offset = 0;
+    if (total > 0) {
+      items.forEach(item => {
+        const len = (item.kwh/total)*circumference;
+        const arc = document.createElementNS(svgNS,"circle");
+        arc.setAttribute("cx",cx); arc.setAttribute("cy",cy); arc.setAttribute("r",radius);
+        arc.setAttribute("fill","none"); arc.setAttribute("stroke",item.color); arc.setAttribute("stroke-width",stroke);
+        arc.setAttribute("stroke-dasharray", `${len} ${circumference-len}`);
+        arc.setAttribute("stroke-dashoffset", -offset);
+        arc.setAttribute("transform", `rotate(-90 ${cx} ${cy})`);
+        svg.appendChild(arc);
+        offset += len;
+      });
+    }
+    const centerVal = document.createElementNS(svgNS,"text");
+    centerVal.setAttribute("x",cx); centerVal.setAttribute("y",cy-4); centerVal.setAttribute("text-anchor","middle");
+    centerVal.setAttribute("font-size","14"); centerVal.setAttribute("font-family","monospace"); centerVal.setAttribute("fill",cssVar('--text-primary')); centerVal.setAttribute("font-weight","600");
+    centerVal.textContent = total.toFixed(2);
+    svg.appendChild(centerVal);
+    const centerLabel = document.createElementNS(svgNS,"text");
+    centerLabel.setAttribute("x",cx); centerLabel.setAttribute("y",cy+12); centerLabel.setAttribute("text-anchor","middle");
+    centerLabel.setAttribute("font-size","9"); centerLabel.setAttribute("font-family","monospace"); centerLabel.setAttribute("fill",cssVar('--text-dim'));
+    centerLabel.textContent = "kWh วันนี้";
+    svg.appendChild(centerLabel);
+    box.appendChild(svg);
+
+    legend.innerHTML = items.map(item => {
+      const pct = total > 0 ? ((item.kwh/total)*100).toFixed(0) : 0;
+      return `<div class="donut-legend-row"><span class="donut-legend-dot" style="background:${item.color};"></span><span style="flex:1;">${item.name}</span><span style="color:var(--text-secondary);">${item.kwh.toFixed(3)} kWh (${pct}%)</span></div>`;
+    }).join("");
   }
 
   function renderRankings() {
     const list = document.getElementById("rankList");
-    list.innerHTML = `<div style="font-family:monospace; font-size:12px; color:var(--text-dim);">แสดงอันดับการใช้ไฟ</div>`;
+    const dKey = todayKey();
+    const raw = hist.deviceDaily[dKey] || {};
+    const ids = Object.keys(devices);
+    const items = ids.map((id,i) => ({ name: devices[id].name, kwh: raw[id] || 0, color: COLORS[i % COLORS.length] }));
+    const maxKwh = Math.max(...items.map(d=>d.kwh), 0.0001);
+    list.innerHTML = items.map(item => `
+      <div class="rank-item">
+        <div class="rank-header"><span>${item.name}</span><span>${item.kwh.toFixed(3)} kWh</span></div>
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${Math.min(100,(item.kwh/maxKwh)*100)}%; background:${item.color};"></div></div>
+      </div>
+    `).join("");
   }
 
-  function exportCsv() { alert("ส่งออก CSV เรียบร้อย"); }
-  function exportHistoryCsv() { alert("ส่งออก CSV ประวัติเรียบร้อย"); }
-  function connectHistoryDb() { alert("เชื่อมต่อฐานข้อมูลย้อนหลัง"); }
+  function updateEnergyAdvice() {
+    const adviceBox = document.getElementById("adviceText");
+    const dKey = todayKey();
+    const hoursData = hist.hourly[dKey] || new Array(24).fill(0);
+    const totalToday = hoursData.reduce((a,b)=>a+b,0);
+
+    if (totalToday < 0.005) {
+      adviceBox.style.color = "var(--on-color)";
+      adviceBox.textContent = "→ ระบบกำลังเก็บข้อมูลตามจริง เมื่อเปิดใช้งานอุปกรณ์ ระบบจะวิเคราะห์แนวทางประหยัดไฟให้ทันที";
+      return;
+    }
+
+    const monthStr = todayKey().slice(0,7);
+    const [y,m] = monthStr.split('-').map(Number);
+    const daysInMonth = new Date(y,m,0).getDate();
+    let sumMonth = 0, daysWithData = 0;
+    for (let d=1; d<=daysInMonth; d++) {
+      const key = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const v = hist.daily[key] || 0;
+      sumMonth += v; if (v>0) daysWithData++;
+    }
+    const forecastCost = daysWithData > 0 ? ((sumMonth/daysWithData)*daysInMonth)*rate : 0;
+    if (hist.budget > 0 && forecastCost >= hist.budget * 0.8) {
+      adviceBox.style.color = "var(--warn-color)";
+      adviceBox.textContent = "→ ⚠️ พยากรณ์ค่าไฟเดือนนี้ใกล้เกินงบประมาณที่ตั้งไว้! แนะนำลดเวลาการเปิดเครื่องใช้ไฟฟ้ากำลังไฟสูงลง";
+      return;
+    }
+
+    const deviceRaw = hist.deviceDaily[dKey] || {};
+    let topId = null, topKwh = 0;
+    Object.keys(deviceRaw).forEach(id => { if (deviceRaw[id] > topKwh) { topKwh = deviceRaw[id]; topId = id; } });
+    if (topId && (topKwh / totalToday) > 0.6) {
+      const name = devices[topId] ? devices[topId].name : topId;
+      adviceBox.style.color = "var(--warn-color)";
+      adviceBox.textContent = `→ "${name}" เป็นอุปกรณ์ที่กินไฟสูงสุดในวันนี้ (${(topKwh/totalToday*100).toFixed(0)}% ของทั้งหมด)`;
+      return;
+    }
+
+    let p2 = hoursData.slice(12,18).reduce((a,b)=>a+b,0);
+    if (p2 > totalToday*0.4) {
+      adviceBox.style.color = "var(--on-color)";
+      adviceBox.textContent = "→ พบการใช้ไฟฟ้าสูงในช่วงบ่าย-เย็น แนะนำหลีกเลี่ยงการเปิดเครื่องใช้ไฟฟ้ากำลังไฟสูงพร้อมกัน";
+      return;
+    }
+
+    let p4 = hoursData.slice(22,24).concat(hoursData.slice(0,6)).reduce((a,b)=>a+b,0);
+    if (p4 > totalToday*0.35) {
+      adviceBox.style.color = "var(--on-color)";
+      adviceBox.textContent = "→ พบการใช้ไฟในช่วงกลางคืนค่อนข้างสูง ตรวจสอบว่ามีอุปกรณ์เปิดทิ้งไว้โดยไม่จำเป็นหรือไม่";
+      return;
+    }
+
+    adviceBox.style.color = "var(--on-color)";
+    adviceBox.textContent = "→ การใช้พลังงานอยู่ในเกณฑ์ปกติ";
+  }
+
+  function exportHistoryCsv() {
+    let csv = "Date,Hour,kWh\n";
+    Object.keys(hist.hourly).sort().forEach(dKey => {
+      hist.hourly[dKey].forEach((v,h) => { if (v>0) csv += `${dKey},${h}:00,${v.toFixed(4)}\n`; });
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "energy-history.csv";
+    a.click();
+  }
 
   loadTheme();
   loadConfig();
   connectMqtt();
   loadGeoConfig();
   loadHistory();
+  loadDeviceTimers();
   renderBreakers();
   renderTodayBars();
   renderMonthBars();
   renderDeviceDonut();
   renderRankings();
+  updateEnergyAdvice();
+  renderAlerts();
 </script>
 </body>
 </html>
