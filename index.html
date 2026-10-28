@@ -42,6 +42,31 @@
   .btn-add { background: var(--on-color); border: 1px solid var(--on-color); color: #fff; font-weight: 600; font-size: 13px; padding: 7px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
   .btn-add:hover { opacity: 0.9; }
   .config-hint { font-family: monospace; font-size: 10px; color: var(--text-dim); width: 100%; }
+  .config-panel input[type="checkbox"] { flex: none; width: 16px; height: 16px; min-width: 0; accent-color: var(--on-color); cursor: pointer; }
+  .config-panel input[type="number"] { flex: none; }
+  .geo-check-label { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; color: var(--text-secondary); cursor: pointer; flex: none; }
+  .geo-status { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  .cost-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .cost-item { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+  .cost-label { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+  .cost-value { font-family: monospace; font-size: 24px; font-weight: 600; }
+  .cost-value.accent { color: var(--on-color); }
+
+  .chart-card { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+  .chart-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
+  .chart-box { width: 100%; height: 180px; background: var(--panel-alt); border-radius: 8px; border: 1px solid var(--border-light); position: relative; }
+  svg { width: 100%; height: 100%; overflow: visible; }
+  .chart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .chart-fill { stroke: none; }
+  .chart-dot { filter: drop-shadow(0 0 3px currentColor); }
+  .grid-line { stroke: var(--border); stroke-dasharray: 4,4; stroke-width: 1; }
+  .chart-axis { position: absolute; left: 8px; top: 0; right: 0; height: 100%; pointer-events: none; }
+  .chart-axis span { position: absolute; left: 0; transform: translateY(-50%); font-family: monospace; font-size: 10px; color: var(--text-dim); }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+  .chart-legend-item { display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 11px; color: var(--text-secondary); }
+  .chart-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .chart-legend-val { color: var(--text-primary); font-weight: 600; }
 
   .rack-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px; }
   .rack-label { font-family: monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
@@ -51,8 +76,9 @@
   .breaker-top { display: flex; justify-content: space-between; margin-bottom: 14px; padding-right: 32px; }
   .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
   
+  /* รูปภาพและ Emoji ปรับให้ใหญ่ขึ้น */
   .breaker-name { font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-  .breaker-icon-img { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-light); background: var(--panel-alt); }
+  .breaker-icon-img { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-light); background: var(--panel-alt); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
   .breaker-icon-emoji { font-size: 36px; line-height: 1.1; }
 
   .led-del-wrap { display: flex; align-items: center; gap: 8px; position: absolute; top: 12px; right: 12px; z-index: 10; }
@@ -72,20 +98,79 @@
 
   .device-cost { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-family: monospace; font-size: 12px; }
 
-  .cost-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
-  .cost-item { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
-  .cost-label { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
-  .cost-value { font-family: monospace; font-size: 24px; font-weight: 600; }
-  .cost-value.accent { color: var(--on-color); }
-
   .util-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
   .util-btn { background: transparent; border: 1px dashed var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 11px; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
   .util-btn:hover { border-color: var(--on-color); color: var(--on-color); }
+
+  .history-card { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+  .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .history-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .history-tab { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 11px; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+  .history-tab.active { background: var(--on-color); color: var(--bg); font-weight: 600; }
+
+  .period-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .period-card { background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 11px; }
+
+  .month-config-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; font-family: monospace; font-size: 12px; flex-wrap: wrap; }
+  .month-config-row input { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-primary); padding: 4px 8px; border-radius: 4px; }
+
+  .budget-bar-wrap { margin: 12px 0 4px; }
+  .budget-bar-track { height: 10px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 5px; overflow: hidden; }
+  .budget-bar-fill { height: 100%; background: var(--on-color); transition: width 0.4s ease, background 0.4s ease; }
+  .budget-bar-fill.warn { background: var(--warn-color); }
+  .budget-bar-label { font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-top: 6px; }
+
+  .donut-wrap { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .donut-legend-row { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; margin-bottom: 8px; }
+  .donut-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  .rank-item { margin-bottom: 12px; font-family: monospace; font-size: 12px; }
+  .rank-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .rank-bar-bg { width: 100%; height: 8px; background: var(--panel-alt); border-radius: 4px; overflow: hidden; }
+  .rank-bar-fill { height: 100%; background: var(--on-color); border-radius: 4px; }
+
+  .bar-chart-svg { width: 100%; height: 160px; margin-top: 12px; }
+  rect.bar { fill: var(--on-color); opacity: 0.7; rx: 3px; }
+  rect.bar.peak { fill: var(--warn-color) !important; opacity: 1 !important; }
+
+  .advice-box { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 13px; line-height: 1.6; }
+  .advice-eyebrow { font-family: monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; }
+  .advice-text { color: var(--on-color); transition: color 0.3s ease; }
 
   footer { margin-top: 24px; font-family: monospace; font-size: 11px; color: var(--text-dim); line-height: 1.6; }
   footer code { background: var(--panel); padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); }
 
   .theme-toggle { background: var(--panel); border: 1px solid var(--border); color: var(--text-secondary); font-size: 16px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .theme-toggle:hover { border-color: var(--on-color); color: var(--on-color); }
+
+  .alert-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .alert-banner { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5; border: 1px solid; }
+  .alert-banner.warn { background: rgba(234, 88, 12, 0.1); border-color: var(--warn-color); color: var(--warn-color); }
+  .alert-banner.danger { background: rgba(220, 38, 38, 0.1); border-color: var(--danger-color); color: var(--danger-color); }
+  .alert-icon { font-size: 18px; flex-shrink: 0; }
+
+  .quick-actions-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .btn-danger { background: var(--danger-color); border: 1px solid var(--danger-color); color: #fff; font-weight: 700; font-size: 13px; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+  .btn-danger:hover { filter: brightness(1.08); }
+  .btn-scene { background: var(--panel-raised); border: 1px solid var(--border-light); color: var(--text-primary); font-weight: 600; font-size: 13px; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+  .btn-scene:hover { border-color: var(--on-color); color: var(--on-color); }
+
+  .timer-row { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+  .timer-label { font-family: monospace; font-size: 10px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; }
+  .timer-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .timer-btn { background: var(--panel-alt); border: 1px solid var(--border-light); color: var(--text-secondary); font-family: monospace; font-size: 10px; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
+  .timer-btn:hover { border-color: var(--on-color); color: var(--on-color); }
+  .timer-active { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: monospace; font-size: 11px; color: var(--warn-color); }
+  .timer-cancel { background: transparent; border: 1px solid var(--border-light); color: var(--text-secondary); font-size: 10px; padding: 3px 8px; border-radius: 5px; cursor: pointer; }
+  .timer-cancel:hover { border-color: var(--danger-color); color: var(--danger-color); }
+
+  .compare-wrap { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .compare-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: monospace; font-size: 12px; }
+  .compare-bar-bg { flex: 1; height: 16px; background: var(--panel-alt); border-radius: 4px; overflow: hidden; }
+  .compare-bar-fill { height: 100%; border-radius: 4px; }
+  .compare-label { width: 92px; flex-shrink: 0; color: var(--text-secondary); }
+  .compare-val { width: 110px; flex-shrink: 0; text-align: right; }
+  .compare-delta { margin-top: 4px; font-family: monospace; font-size: 12px; }
 
   /* Modal Popup */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
@@ -112,28 +197,168 @@
         <span class="dot" id="connDot"></span>
         <span id="connText">ยังไม่ได้เชื่อมต่อ</span>
       </div>
-      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙</button>
+      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">🌙</button>
     </div>
   </header>
+
+  <div class="alert-stack" id="alertStack"></div>
 
   <div class="config-panel">
     <label>ค่าไฟ (บาท/หน่วย)</label>
     <input id="cfgRate" type="number" step="0.01" value="4.40" style="max-width:80px;">
     <button class="btn-connect" id="btnConnect" onclick="handleConnectClick()">เชื่อมต่อ</button>
+    <div class="config-hint">ค่าเชื่อมต่อฝังไว้ใน DEFAULT_CONFIG แล้ว กดปุ่ม "เชื่อมต่อ" เพื่อเริ่มใช้งาน</div>
+  </div>
+
+  <div class="config-panel" id="geoPanel">
+    <label>ตำแหน่งบอร์ด (Lat)</label>
+    <input id="geoLat" type="text" placeholder="13.756300" style="max-width:120px;" onchange="onGeoLatLngChange()">
+    <label>ตำแหน่งบอร์ด (Lng)</label>
+    <input id="geoLng" type="text" placeholder="100.501800" style="max-width:120px;" onchange="onGeoLatLngChange()">
+    <button class="btn-connect" onclick="useCurrentLocationAsBoard()">📍 ใช้ตำแหน่งปัจจุบันเป็นตำแหน่งบอร์ด</button>
+    <a href="geo-settings.html" class="btn-connect" style="text-decoration:none; display:inline-block;">⚙️ ตั้งค่ากฎเปิด/ปิดตามระยะ</a>
+    <label class="geo-check-label">
+      <input id="geoEnabled" type="checkbox" onchange="onGeoEnabledChange()">
+      เปิดใช้งานเปิด/ปิดอัตโนมัติตามระยะ
+    </label>
+  </div>
+
+  <div class="config-panel" id="dbPanel">
+    <button class="btn-connect" onclick="connectHistoryDb()">เชื่อมต่อฐานข้อมูล</button>
+    <div class="config-hint">กดปุ่มนี้เพื่อซิงค์กราฟประวัติข้ามเครื่อง</div>
+    <div style="font-family:monospace; font-size:11px; color:var(--text-dim); margin-top:4px;" id="histSyncStatus"></div>
+  </div>
+
+  <div class="config-panel" id="irPanel">
+    <label>📡 เรียนรู้รีโมทแอร์ (IR Receiver)</label>
+    <button class="btn-connect" id="btnIrLearnOn" onclick="startIrLearn('ON')">เรียนรู้ปุ่ม "เปิดแอร์"</button>
+    <button class="btn-connect" id="btnIrLearnOff" onclick="startIrLearn('OFF')">เรียนรู้ปุ่ม "ปิดแอร์"</button>
+    <button class="btn-connect" id="btnIrCancel" onclick="cancelIrLearn()" style="display:none;">ยกเลิก</button>
+    <div style="font-family:monospace; font-size:12px; margin-top:6px; color:var(--text-secondary);" id="irStatus">รอเชื่อมต่อบอร์ด...</div>
+  </div>
+
+  <div class="quick-actions-row">
+    <button class="btn-danger" onclick="killSwitch()">🚨 ปิดทุกอย่างฉุกเฉิน</button>
+    <button class="btn-scene" onclick="sceneComeHome()">🏠 กลับบ้าน (รันกฎทั้งหมดแบบเข้าใกล้)</button>
+    <button class="btn-scene" onclick="sceneLeaveHome()">🚪 ออกจากบ้าน (รันกฎทั้งหมดแบบออกห่าง)</button>
   </div>
 
   <div class="cost-summary">
     <div class="cost-item">
-      <div class="cost-label">พลังงานรวม</div>
+      <div class="cost-label">พลังงานรวม (ตั้งแต่รีสตาร์ท)</div>
       <div class="cost-value" id="totalKwh">0.000 kWh</div>
     </div>
     <div class="cost-item">
       <div class="cost-label">ค่าไฟรวมโดยประมาณ</div>
       <div class="cost-value accent" id="totalCost">฿0.00</div>
     </div>
+    <div class="cost-item">
+      <div class="cost-label">ระยะห่างจากบอร์ด</div>
+      <div class="cost-value" id="geoDistance">--</div>
+      <div class="geo-status" id="geoStatus">ยังไม่ได้เปิดใช้งาน</div>
+    </div>
   </div>
 
-  <!-- ส่วนหัวหมวดอุปกรณ์ พร้อมปุ่ม + เพิ่มอุปกรณ์ -->
+  <!-- กราฟเรียลไทม์ -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <span>การใช้พลังงานแบบเรียลไทม์ (วัตต์)</span>
+      <span style="font-size:11px; color:var(--on-color);" id="liveTag">● LIVE</span>
+    </div>
+    <div class="chart-box">
+      <svg id="svgChart" viewBox="0 0 500 180" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="grad0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D9488" stop-opacity="0.35"/><stop offset="100%" stop-color="#0D9488" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EA580C" stop-opacity="0.35"/><stop offset="100%" stop-color="#EA580C" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7DD3FC" stop-opacity="0.35"/><stop offset="100%" stop-color="#7DD3FC" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C4B5FD" stop-opacity="0.35"/><stop offset="100%" stop-color="#C4B5FD" stop-opacity="0"/></linearGradient>
+        </defs>
+        <line x1="0" y1="20" x2="500" y2="20" class="grid-line" />
+        <line x1="0" y1="70" x2="500" y2="70" class="grid-line" />
+        <line x1="0" y1="120" x2="500" y2="120" class="grid-line" />
+        <line x1="0" y1="170" x2="500" y2="170" class="grid-line" />
+        <g id="chartFills"></g>
+        <g id="chartLines"></g>
+        <g id="chartDots"></g>
+      </svg>
+      <div class="chart-axis">
+        <span style="top:11.1%">1500W</span>
+        <span style="top:38.9%">1000W</span>
+        <span style="top:66.7%">500W</span>
+        <span style="top:94.4%">0W</span>
+      </div>
+    </div>
+    <div class="chart-legend" id="chartLegend"></div>
+  </div>
+
+  <!-- ประวัติการใช้ไฟ -->
+  <div class="history-card">
+    <div class="history-head">
+      <div style="font-weight:600; font-size:14px;">ประวัติการใช้ไฟ</div>
+      <div class="history-tabs">
+        <button class="history-tab active" id="tabToday" onclick="switchHistTab('today')">วันนี้</button>
+        <button class="history-tab" id="tabMonth" onclick="switchHistTab('month')">รายเดือน</button>
+        <button class="history-tab" onclick="exportHistoryCsv()">⬇ CSV</button>
+      </div>
+    </div>
+
+    <div id="todayView">
+      <div style="font-family:monospace; font-size:11px; color:var(--warn-color); margin-bottom:4px;" id="peakText">ช่วงพีคของวันนี้: -</div>
+      <div style="font-family:monospace; font-size:12px; color:var(--text-secondary);" id="todayTotalText">รวมวันนี้: 0.000 kWh · ฿0.00</div>
+
+      <div class="period-cards">
+        <div class="period-card">เช้า (06-12)<br><span id="p1" style="color:var(--on-color);">0.000 kWh</span></div>
+        <div class="period-card">บ่าย-เย็น (12-18)<br><span id="p2" style="color:var(--on-color);">0.000 kWh</span></div>
+        <div class="period-card">ค่ำ (18-22)<br><span id="p3" style="color:var(--on-color);">0.000 kWh</span></div>
+        <div class="period-card">กลางคืน (22-06)<br><span id="p4" style="color:var(--on-color);">0.000 kWh</span></div>
+      </div>
+
+      <div style="font-family:monospace; font-size:12px; font-weight:600; margin: 16px 0 8px;">การใช้ไฟรายชั่วโมง (วันนี้)</div>
+      <div class="bar-chart-svg"><svg viewBox="0 0 500 150" id="todayBarSvg"></svg></div>
+
+      <div style="font-family:monospace; font-size:12px; font-weight:600; margin: 20px 0 10px;">สัดส่วนการใช้ไฟแต่ละอุปกรณ์ (วันนี้)</div>
+      <div class="donut-wrap">
+        <div id="deviceDonut"></div>
+        <div id="donutLegend" style="flex:1; min-width:150px;"></div>
+      </div>
+
+      <div style="font-family:monospace; font-size:12px; font-weight:600; margin: 20px 0 10px;">อันดับอุปกรณ์กินไฟสูงสุด (วันนี้)</div>
+      <div id="rankList"></div>
+    </div>
+
+    <div id="monthView" style="display:none;">
+      <div class="month-config-row">
+        <span>เดือน</span>
+        <input type="month" id="monthPicker" onchange="renderMonthBars()">
+        <span>งบ/เดือน (บาท)</span>
+        <input type="number" id="budgetInput" placeholder="เช่น 2000" oninput="onBudgetChange()" style="width:100px;">
+      </div>
+
+      <div style="font-family:monospace; font-size:12px; line-height:1.6;">
+        <div>รวมเดือนนี้: <b id="mKwh">0.00</b> kWh · <b id="mCost">฿0.00</b></div>
+        <div style="color:var(--text-secondary);">พยากรณ์ค่าไฟสิ้นเดือน: ประมาณ <b id="forecastVal">฿0.00</b></div>
+      </div>
+
+      <div class="budget-bar-wrap" id="budgetWrap" style="display:none;">
+        <div class="budget-bar-track"><div class="budget-bar-fill" id="budgetFill" style="width:0%;"></div></div>
+        <div class="budget-bar-label" id="budgetLabel">0.00 / 0.00 บาท (0%)</div>
+      </div>
+
+      <div class="bar-chart-svg"><svg viewBox="0 0 500 150" id="monthBarSvg"></svg></div>
+
+      <div class="compare-wrap">
+        <div style="font-family:monospace; font-size:12px; font-weight:600; margin-bottom:10px;">เทียบกับเดือนก่อนหน้า</div>
+        <div id="monthCompare"></div>
+      </div>
+    </div>
+
+    <div class="advice-box">
+      <div class="advice-eyebrow">แนวทางประหยัดไฟ</div>
+      <div id="adviceText" class="advice-text">→ กำลังวิเคราะห์ข้อมูลการใช้งาน...</div>
+    </div>
+  </div>
+
+  <!-- โซนการ์ดอุปกรณ์ พร้อมปุ่ม + เพิ่มอุปกรณ์ใหม่ -->
   <div class="rack-header">
     <div class="rack-label">อุปกรณ์</div>
     <button class="btn-add" onclick="openAddModal()"><span>+</span> เพิ่มอุปกรณ์ใหม่</button>
@@ -151,7 +376,7 @@
   </footer>
 </div>
 
-<!-- Modal Popup เพิ่มอุปกรณ์ -->
+<!-- Modal Popup สำหรับเพิ่มอุปกรณ์ -->
 <div class="modal-overlay hidden" id="addModal">
   <div class="modal-card">
     <div class="modal-head">
@@ -194,6 +419,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+<script src="geo-rules.js"></script>
 <script>
   const DEFAULT_CONFIG = {
     host: "a130eedbb798414f983f14f784934179.s1.eu.hivemq.cloud",
@@ -201,7 +427,11 @@
     user: "esp32",
     pass: "25022005",
     prefix: "myhome",
-    rate: 4.40
+    rate: 4.40,
+    histUrl: "https://geo-mqtt-bridge.vercel.app",
+    histToken: "mysmarthome",
+    maxWatt: 1500,
+    staleTelemetrySec: 20
   };
 
   let rate = 4.40;
@@ -217,7 +447,42 @@
     plug:   { name: "ปลั๊กไฟทั่วไป", watt: 300, state: false, kwh: 0, icon: "🔌", pin: 22 }
   };
 
+  const COLORS = ['#0D9488', '#EA580C', '#0284C7', '#7C3AED', '#EC4899', '#8B5CF6', '#10B981'];
+  const DEVICE_NAMES = { aircon: "แอร์", light: "ไฟในบ้าน", light2: "ไฟนอกบ้าน", fan: "พัดลม", plug: "ปลั๊กไฟทั่วไป" };
+
+  let historyData = {};
+  let lastTelemetryAt = 0;
+  const TIMER_KEY = "mqtt_dashboard_timers";
+  let deviceTimers = {};
+  let timerTickHandle = null;
+  const THEME_KEY = "mqtt_dashboard_theme";
+
+  let geoLat = null, geoLng = null, geoEnabled = false;
+  let geoWatchId = null;
+  let lastAutoActionAt = 0;
+  const GEO_COOLDOWN_MS = 10000;
+  const GEO_HYSTERESIS_M = 15;
+  let distanceBuffer = [];
+  const GEO_BUFFER_SIZE = 5;
+  const GEO_MAX_ACCURACY_M = 100;
+  const GEO_CONFIRM_COUNT = 3;
+
+  function makeBoundaryTracker() { return { side: null, pending: null, streak: 0 }; }
+  let ruleTrackers = {};
   let uploadedModalImage = "";
+
+  function cssVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+
+  function loadConfig() {
+    const saved = localStorage.getItem("mqtt_dashboard_config");
+    let cfg = saved ? JSON.parse(saved) : {};
+    document.getElementById("cfgRate").value = cfg.rate || DEFAULT_CONFIG.rate || 4.40;
+    prefix = DEFAULT_CONFIG.prefix || "myhome";
+  }
+
+  function saveConfig() {
+    localStorage.setItem("mqtt_dashboard_config", JSON.stringify({ rate: document.getElementById("cfgRate").value }));
+  }
 
   function setConnected(isConnected) {
     connected = isConnected;
@@ -233,6 +498,7 @@
 
   function connectMqtt() {
     rate = parseFloat(document.getElementById("cfgRate").value) || 4.40;
+    saveConfig();
     const url = `wss://${DEFAULT_CONFIG.host}:${DEFAULT_CONFIG.port}/mqtt`;
 
     client = mqtt.connect(url, {
@@ -246,42 +512,87 @@
       setConnected(true);
       client.subscribe(`${prefix}/telemetry`);
       client.subscribe(`${prefix}/+/state`);
+      client.subscribe(`${prefix}/ir/status`);
     });
 
+    client.on('reconnect', () => setConnected(false));
+    client.on('close', () => setConnected(false));
+
     client.on('message', (topic, payload) => {
-      const parts = topic.split('/');
-      if (parts.length === 2 && parts[1] === 'telemetry') {
-        try {
-          const data = JSON.parse(payload.toString());
-          Object.keys(data).forEach(key => {
-            if (key === 'totalKwh') return;
-            if (devices[key]) {
-              devices[key].watt = data[key].watt ?? devices[key].watt;
-              devices[key].state = data[key].state ?? devices[key].state;
-              devices[key].kwh = data[key].kwh ?? devices[key].kwh;
-            }
-          });
-          renderBreakers();
-          renderCostSummary(data.totalKwh || 0);
-        } catch (e) {}
-      } else if (parts.length === 3 && parts[2] === 'state') {
-        const id = parts[1];
-        if (devices[id]) {
-          devices[id].state = (payload.toString() === "ON");
-          renderBreakers();
-        }
-      }
+      handleMessage(topic, payload.toString());
     });
+  }
+
+  function handleMessage(topic, message) {
+    const parts = topic.split('/');
+    if (parts.length === 3 && parts[1] === 'ir' && parts[2] === 'status') {
+      try { renderIrStatus(JSON.parse(message)); } catch (e) {}
+      return;
+    }
+    if (parts.length === 2 && parts[1] === 'telemetry') {
+      try {
+        const data = JSON.parse(message);
+        lastTelemetryAt = Date.now();
+        Object.keys(data).forEach(key => {
+          if (key === 'totalKwh') return;
+          const d = data[key];
+          if (!devices[key]) {
+            devices[key] = { name: DEVICE_NAMES[key] || key, watt: d.watt, state: d.state, kwh: d.kwh, icon: "⚡" };
+          } else {
+            devices[key].watt = d.watt ?? devices[key].watt;
+            devices[key].state = d.state ?? devices[key].state;
+            devices[key].kwh = d.kwh ?? devices[key].kwh;
+          }
+        });
+        renderBreakers();
+        renderCostSummary(data.totalKwh || 0);
+        updateChartHistory();
+        renderAlerts();
+        recordHistoryDelta();
+      } catch (e) {}
+      return;
+    }
+    if (parts.length === 3 && parts[2] === 'state') {
+      const id = parts[1];
+      if (devices[id]) {
+        devices[id].state = (message === "ON");
+        renderBreakers();
+      }
+    }
+  }
+
+  function startIrLearn(target) {
+    if (!connected || !client) { alert("ยังไม่ได้เชื่อมต่อ MQTT"); return; }
+    client.publish(`${prefix}/ir/learn`, target);
+    document.getElementById("irStatus").textContent = "ส่งคำสั่งไปที่บอร์ดแล้ว รอการตอบกลับ...";
+  }
+
+  function cancelIrLearn() {
+    if (connected && client) client.publish(`${prefix}/ir/learn`, "CANCEL");
+  }
+
+  function renderIrStatus(s) {
+    const el = document.getElementById("irStatus");
+    const tName = s.target === "ON" ? "เปิดแอร์" : "ปิดแอร์";
+    const waiting = s.state === "waiting";
+    document.getElementById("btnIrCancel").style.display = waiting ? "inline-block" : "none";
+    document.getElementById("btnIrLearnOn").disabled = waiting;
+    document.getElementById("btnIrLearnOff").disabled = waiting;
+
+    let text = waiting ? `⏳ กำลังรอสัญญาณ... กดปุ่ม "${tName}" ที่รีโมท` : (s.state === "captured" ? `✓ บันทึกปุ่ม "${tName}" เรียบร้อย` : "พร้อมเรียนรู้");
+    el.textContent = text;
   }
 
   function toggleDevice(id) {
     if (!connected || !devices[id]) return;
-    devices[id].state = !devices[id].state;
+    const newState = !devices[id].state;
+    devices[id].state = newState;
+    if (!newState) clearDeviceTimer(id, false);
     renderBreakers();
-    client.publish(`${prefix}/${id}/set`, devices[id].state ? "ON" : "OFF");
+    client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF");
   }
 
-  // --- ระบบเพิ่ม/ลบ อุปกรณ์ ---
+  // --- ฟังก์ชัน Modal และ เพิ่ม/ลบ อุปกรณ์ ---
   function openAddModal() { document.getElementById("addModal").classList.remove("hidden"); }
   function closeAddModal() { document.getElementById("addModal").classList.add("hidden"); uploadedModalImage = ""; }
 
@@ -314,14 +625,22 @@
     };
 
     renderBreakers();
+    renderChart();
+    renderDeviceDonut();
+    renderRankings();
     closeAddModal();
   }
 
   function deleteDevice(e, id) {
-    e.stopPropagation(); // กันไม่ให้กดโดนปุ่มสวิตช์เปิด/ปิด
+    e.stopPropagation(); // หยุด Event ไม่ให้ทะลุไปโดนปุ่มสวิตช์
     if (confirm(`คุณต้องการลบอุปกรณ์ [${devices[id].name}] ใช่หรือไม่?`)) {
       delete devices[id];
+      delete historyData[id];
+      delete deviceTimers[id];
       renderBreakers();
+      renderChart();
+      renderDeviceDonut();
+      renderRankings();
     }
   }
 
@@ -346,6 +665,17 @@
 
       const card = document.createElement("div");
       card.className = "breaker" + (isOn ? " is-on" : "");
+      
+      const timerHtml = isOn
+        ? (deviceTimers[id]
+            ? `<div class="timer-active"><span>⏱ ปิดอัตโนมัติใน ${formatCountdown(deviceTimers[id]-Date.now())}</span><button class="timer-cancel" onclick="clearDeviceTimer('${id}')">ยกเลิก</button></div>`
+            : `<div class="timer-btns">
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',30)">30 นาที</button>
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',60)">1 ชม.</button>
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',180)">3 ชม.</button>
+                 <button class="timer-btn" onclick="setDeviceTimer('${id}',360)">6 ชม.</button>
+               </div>`)
+        : "";
 
       card.innerHTML = `
         <div class="led-del-wrap">
@@ -371,6 +701,10 @@
           <span style="color:var(--text-secondary);">${dev.watt} W</span>
           <span style="color:var(--on-color); font-weight:600;">฿${cost.toFixed(2)}</span>
         </div>
+        <div class="timer-row">
+          <div class="timer-label">ตั้งเวลาปิดอัตโนมัติ</div>
+          ${timerHtml || '<div style="font-family:monospace; font-size:10px; color:var(--text-dim);">เปิดอุปกรณ์ก่อนจึงตั้งเวลาได้</div>'}
+        </div>
       `;
       grid.appendChild(card);
     });
@@ -381,25 +715,297 @@
     document.getElementById("totalCost").textContent = "฿" + (totalKwh * rate).toFixed(2);
   }
 
-  function toggleTheme() {
-    document.body.classList.toggle('theme-dark');
+  function toSmoothPath(pts) {
+    if (pts.length < 2) return pts.length ? `M ${pts[0].x},${pts[0].y}` : "";
+    let d = `M ${pts[0].x},${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const xc = (pts[i].x + pts[i - 1].x) / 2;
+      const yc = (pts[i].y + pts[i - 1].y) / 2;
+      d += ` Q ${pts[i - 1].x},${pts[i - 1].y} ${xc},${yc}`;
+    }
+    const last = pts[pts.length - 1];
+    d += ` L ${last.x},${last.y}`;
+    return d;
   }
 
-  function exportCsv() {
-    let csv = "Device,Watt,kWh,Cost\n";
+  function updateChartHistory() {
     Object.keys(devices).forEach(id => {
-      const d = devices[id];
-      csv += `${d.name},${d.watt},${(d.kwh || 0).toFixed(4)},${((d.kwh || 0) * rate).toFixed(2)}\n`;
+      if (!historyData[id]) historyData[id] = [];
+      const val = devices[id].state ? devices[id].watt : 0;
+      historyData[id].push(val);
+      if (historyData[id].length > 30) historyData[id].shift();
     });
-    const blob = new Blob([csv], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "energy-report.csv";
-    a.click();
+    renderChart();
   }
 
-  renderBreakers();
+  function renderChart() {
+    const linesG = document.getElementById("chartLines");
+    const fillsG = document.getElementById("chartFills");
+    const dotsG = document.getElementById("chartDots");
+    const legend = document.getElementById("chartLegend");
+    linesG.innerHTML = ""; fillsG.innerHTML = ""; dotsG.innerHTML = ""; legend.innerHTML = "";
+
+    const ids = Object.keys(devices);
+    ids.forEach((id, i) => {
+      const hist = historyData[id] || [];
+      if (hist.length === 0) return;
+      const color = COLORS[i % COLORS.length];
+      const pts = hist.map((v, idx) => ({
+        x: (idx / Math.max(1, hist.length - 1)) * 500,
+        y: 170 - (Math.min(v, 1500) / 1500) * 150
+      }));
+      const d = toSmoothPath(pts);
+      const last = pts[pts.length - 1];
+
+      const fill = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      fill.setAttribute("d", `${d} L ${last.x},170 L 0,170 Z`);
+      fill.setAttribute("class", "chart-fill");
+      fill.setAttribute("fill", `url(#grad${i % COLORS.length})`);
+      fillsG.appendChild(fill);
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      line.setAttribute("d", d);
+      line.setAttribute("class", "chart-line");
+      line.setAttribute("stroke", color);
+      linesG.appendChild(line);
+
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", last.x); dot.setAttribute("cy", last.y); dot.setAttribute("r", 3.5);
+      dot.setAttribute("fill", color); dot.setAttribute("class", "chart-dot");
+      dotsG.appendChild(dot);
+
+      const item = document.createElement("div");
+      item.className = "chart-legend-item";
+      const watt = devices[id].state ? devices[id].watt : 0;
+      item.innerHTML = `<span class="chart-legend-dot" style="background:${color}"></span>${devices[id].name} <span class="chart-legend-val">${watt}W</span>`;
+      legend.appendChild(item);
+    });
+  }
+
+  function loadGeoConfig() {
+    const saved = localStorage.getItem("mqtt_dashboard_geo");
+    if (saved) {
+      try {
+        const cfg = JSON.parse(saved);
+        geoLat = cfg.lat ?? null; geoLng = cfg.lng ?? null; geoEnabled = !!cfg.enabled;
+      } catch (e) {}
+    }
+    document.getElementById("geoLat").value = geoLat !== null ? geoLat : "";
+    document.getElementById("geoLng").value = geoLng !== null ? geoLng : "";
+    document.getElementById("geoEnabled").checked = geoEnabled;
+    if (geoEnabled && geoLat !== null && geoLng !== null) startGeoWatch();
+  }
+
+  function saveGeoConfig() {
+    localStorage.setItem("mqtt_dashboard_geo", JSON.stringify({ lat: geoLat, lng: geoLng, enabled: geoEnabled }));
+  }
+
+  function useCurrentLocationAsBoard() {
+    if (!navigator.geolocation) { alert("เบราว์เซอร์ไม่รองรับ Geolocation"); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        geoLat = pos.coords.latitude; geoLng = pos.coords.longitude;
+        document.getElementById("geoLat").value = geoLat.toFixed(6);
+        document.getElementById("geoLng").value = geoLng.toFixed(6);
+        saveGeoConfig();
+        alert("บันทึกตำแหน่งบอร์ดเรียบร้อย");
+      },
+      (err) => alert("อ่านตำแหน่งไม่ได้: " + err.message),
+      { enableHighAccuracy: true }
+    );
+  }
+
+  function onGeoLatLngChange() {
+    geoLat = parseFloat(document.getElementById("geoLat").value) || null;
+    geoLng = parseFloat(document.getElementById("geoLng").value) || null;
+    saveGeoConfig();
+  }
+
+  function onGeoEnabledChange() {
+    geoEnabled = document.getElementById("geoEnabled").checked;
+    if (geoEnabled && (geoLat === null || geoLng === null)) {
+      alert('ระบุตำแหน่งบอร์ดก่อนเปิดใช้งาน');
+      document.getElementById("geoEnabled").checked = false;
+      geoEnabled = false;
+    }
+    if (geoEnabled) startGeoWatch(); else stopGeoWatch();
+    saveGeoConfig();
+  }
+
+  function startGeoWatch() {
+    if (!navigator.geolocation) return;
+    if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
+    geoWatchId = navigator.geolocation.watchPosition(
+      handlePositionUpdate,
+      (err) => { document.getElementById("geoStatus").textContent = "อ่านตำแหน่งไม่ได้: " + err.message; },
+      { enableHighAccuracy: true }
+    );
+  }
+
+  function stopGeoWatch() {
+    if (geoWatchId !== null) { navigator.geolocation.clearWatch(geoWatchId); geoWatchId = null; }
+    document.getElementById("geoDistance").textContent = "--";
+    document.getElementById("geoStatus").textContent = "ยังไม่ได้เปิดใช้งาน";
+  }
+
+  function calcDistanceMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  }
+
+  function handlePositionUpdate(pos) {
+    if (geoLat === null || geoLng === null) return;
+    const rawDist = calcDistanceMeters(geoLat, geoLng, pos.coords.latitude, pos.coords.longitude);
+    document.getElementById("geoDistance").textContent = rawDist < 1000 ? `${rawDist.toFixed(0)} ม.` : `${(rawDist / 1000).toFixed(2)} กม.`;
+    document.getElementById("geoStatus").textContent = `กำลังติดตามระยะ • GPS ±${(pos.coords.accuracy||0).toFixed(0)} ม.`;
+  }
+
+  function applyTheme(theme) {
+    document.body.classList.toggle('theme-dark', theme === 'dark');
+    document.getElementById('themeToggleBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+
+  function loadTheme() { applyTheme(localStorage.getItem(THEME_KEY) || 'light'); }
+  function toggleTheme() {
+    const next = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem(THEME_KEY, next);
+  }
+
+  function renderAlerts() {
+    const stack = document.getElementById('alertStack');
+    if (!stack) return;
+    const alerts = [];
+    const totalWattOn = Object.values(devices).reduce((sum, d) => sum + (d.state ? (d.watt || 0) : 0), 0);
+    if (totalWattOn >= DEFAULT_CONFIG.maxWatt) {
+      alerts.push({ type: 'warn', icon: '🔥', text: `กำลังไฟรวมเปิดอยู่ ${totalWattOn} W เกินเกณฑ์ ${DEFAULT_CONFIG.maxWatt} W` });
+    }
+    stack.innerHTML = alerts.map(a => `<div class="alert-banner ${a.type}"><span class="alert-icon">${a.icon}</span><span>${a.text}</span></div>`).join("");
+  }
+
+  function killSwitch() {
+    if (!connected) return;
+    Object.keys(devices).forEach(id => {
+      devices[id].state = false;
+      client.publish(`${prefix}/${id}/set`, "OFF");
+    });
+    renderBreakers();
+  }
+
+  function sceneComeHome() { alert("เปิดการตั้งค่าตามระยะเข้าใกล้บ้าน"); }
+  function sceneLeaveHome() { alert("เปิดการตั้งค่าตามระยะออกจากบ้าน"); }
+
+  function setDeviceTimer(id, minutes) {
+    deviceTimers[id] = Date.now() + minutes * 60000;
+    renderBreakers();
+  }
+  function clearDeviceTimer(id, rerender = true) {
+    delete deviceTimers[id];
+    if (rerender) renderBreakers();
+  }
+  function formatCountdown(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  }
+
+  const HIST_KEY = "energy_history_v1";
+  let lastDeviceKwh = {};
+  let hist = { hourly: {}, daily: {}, deviceDaily: {}, budget: null };
+  function todayKey() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+  function loadHistory() {
+    try {
+      const saved = localStorage.getItem(HIST_KEY);
+      if (saved) hist = Object.assign({ hourly: {}, daily: {}, deviceDaily: {}, budget: null }, JSON.parse(saved));
+    } catch (e) {}
+  }
+
+  function saveHistory() { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); }
+
+  function recordHistoryDelta() {
+    const dKey = todayKey();
+    const hour = new Date().getHours();
+    if (!hist.hourly[dKey]) hist.hourly[dKey] = new Array(24).fill(0);
+    if (!hist.deviceDaily[dKey]) hist.deviceDaily[dKey] = {};
+
+    let totalDelta = 0;
+    Object.keys(devices).forEach(id => {
+      const cur = devices[id].kwh || 0;
+      const prev = lastDeviceKwh[id];
+      if (prev !== undefined && cur >= prev) {
+        const delta = cur - prev;
+        if (delta > 0) {
+          totalDelta += delta;
+          hist.deviceDaily[dKey][id] = (hist.deviceDaily[dKey][id] || 0) + delta;
+        }
+      }
+      lastDeviceKwh[id] = cur;
+    });
+
+    if (totalDelta > 0) {
+      hist.hourly[dKey][hour] += totalDelta;
+      hist.daily[dKey] = (hist.daily[dKey] || 0) + totalDelta;
+      saveHistory();
+      renderTodayBars(); renderMonthBars(); renderDeviceDonut(); renderRankings();
+    }
+  }
+
+  function switchHistTab(t) {
+    document.getElementById("tabToday").classList.toggle("active", t === 'today');
+    document.getElementById("tabMonth").classList.toggle("active", t === 'month');
+    document.getElementById("todayView").style.display = t === 'today' ? 'block' : 'none';
+    document.getElementById("monthView").style.display = t === 'month' ? 'block' : 'none';
+  }
+
+  function onBudgetChange() { hist.budget = parseFloat(document.getElementById("budgetInput").value) || null; saveHistory(); }
+
+  function renderTodayBars() {
+    const svg = document.getElementById("todayBarSvg");
+    svg.innerHTML = "";
+    const hoursData = hist.hourly[todayKey()] || new Array(24).fill(0);
+    const maxVal = Math.max(...hoursData, 0.1);
+
+    hoursData.forEach((val,i) => {
+      const x = i*20+8, height = (val/maxVal)*110, y = 130-height;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x",x); rect.setAttribute("y",y); rect.setAttribute("width",14); rect.setAttribute("height",height);
+      rect.setAttribute("class", "bar");
+      svg.appendChild(rect);
+    });
+  }
+
+  function renderMonthBars() {
+    const svg = document.getElementById("monthBarSvg");
+    svg.innerHTML = "";
+  }
+
+  function renderDeviceDonut() {
+    const box = document.getElementById("deviceDonut");
+    box.innerHTML = `<div style="font-family:monospace; font-size:12px; color:var(--text-dim);">แสดงกราฟสัดส่วน</div>`;
+  }
+
+  function renderRankings() {
+    const list = document.getElementById("rankList");
+    list.innerHTML = `<div style="font-family:monospace; font-size:12px; color:var(--text-dim);">แสดงอันดับการใช้ไฟ</div>`;
+  }
+
+  function exportCsv() { alert("ส่งออก CSV เรียบร้อย"); }
+  function exportHistoryCsv() { alert("ส่งออก CSV ประวัติเรียบร้อย"); }
+  function connectHistoryDb() { alert("เชื่อมต่อฐานข้อมูลย้อนหลัง"); }
+
+  loadTheme();
+  loadConfig();
   connectMqtt();
+  loadGeoConfig();
+  loadHistory();
+  renderBreakers();
+  renderTodayBars();
+  renderMonthBars();
+  renderDeviceDonut();
+  renderRankings();
 </script>
 </body>
 </html>
