@@ -11,6 +11,7 @@
     --warn-color: #EA580C; --danger-color: #DC2626; --danger-glow: rgba(220, 38, 38, 0.35);
     --text-primary: #1F2933; --text-secondary: #5B6472;
     --text-dim: #9AA3AF; --border: #E3E6EB; --border-light: #D3D8DF; --thumb-off: #6B7280;
+    --label-yellow: #EAB308;
   }
   /* ธีมมืด: สลับได้จากปุ่มที่มุมขวาบน ค่าที่จำไว้เก็บใน localStorage */
   body.theme-dark {
@@ -76,14 +77,18 @@
   .breaker { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 18px; transition: border-color 0.25s; position: relative; }
   .breaker.is-on { border-color: rgba(13,148,136,0.4); }
   
-  /* จัดส่วนหัวของการ์ดให้อยู่กึ่งกลาง */
-  .breaker-top { display: flex; justify-content: center; width: 100%; margin-bottom: 14px; }
-  .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 6px; text-align: center; }
+  /* จัดส่วนบนของการ์ดและรหัสให้อยู่กึ่งกลาง */
+  .breaker-top { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 14px; width: 100%; }
+  .breaker-num { font-family: monospace; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; text-align: center; }
   
-  /* ปรับรูปแบบรูปภาพและ Emoji ให้กึ่งกลางการ์ด */
-  .breaker-name { font-size: 18px; font-weight: 700; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; width: 100%; margin-top: 4px; }
-  .breaker-icon-img { width: 180px; height: 180px; object-fit: cover; border-radius: 16px; border: 1px solid var(--border-light); background: var(--panel-alt); box-shadow: 0 6px 14px rgba(0,0,0,0.1); }
-  .breaker-icon-emoji { font-size: 80px; line-height: 1.1; margin: 8px 0; }
+  /* ปรับรูปแบบรูปภาพและ Emoji ให้ใหญ่อยู่ตรงกลาง */
+  .breaker-name { font-size: 18px; font-weight: 700; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; width: 100%; margin-top: 2px; }
+  .breaker-icon-img { width: 180px; height: 180px; object-fit: cover; border-radius: 16px; border: 1px solid var(--border-light); background: var(--panel-alt); box-shadow: 0 6px 14px rgba(0,0,0,0.1); margin: 0 auto; }
+  .breaker-icon-emoji { font-size: 80px; line-height: 1.1; margin: 8px 0; text-align: center; }
+
+  /* ฉลากประหยัดไฟเบอร์ 5 บนการ์ด */
+  .energy-label-badge { display: inline-flex; align-items: center; gap: 4px; background: #FEF08A; border: 1px solid #EAB308; color: #713F12; font-family: monospace; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; margin-top: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .energy-label-badge .stars { color: #D97706; font-size: 10px; }
 
   .led-del-wrap { display: flex; align-items: center; gap: 6px; position: absolute; top: 12px; right: 12px; z-index: 10; }
   .led { width: 10px; height: 10px; border-radius: 50%; background: var(--off-color); margin-right: 2px; }
@@ -802,6 +807,30 @@
     }
   }
 
+  // ---------- ฟังก์ชันคำนวณและประเมินฉลากเบอร์ 5 จากข้อมูลการใช้จริง (วิธีที่ 2) ----------
+  function calculateEnergyLabel(kwh, watt) {
+    if (!watt || watt <= 0) return { label: "เบอร์ 5", stars: "" };
+    
+    // หากพึ่งเปิดใช้งานและยังไม่มีหน่วยไฟสะสมเพียงพอ ให้แสดงเป็นเบอร์ 5 มาตรฐาน
+    if (!kwh || kwh < 0.001) {
+      return { label: "เบอร์ 5", stars: "" };
+    }
+
+    // คำนวณหาค่าสัดส่วนโหลดจริงเทียบกับพิกัดกำลังไฟฟ้า (Load Efficiency Ratio)
+    // การใช้ไฟจริงสะสมจะสะท้อนถึงประสิทธิภาพการจัดการพลังงานจริงของอุปกรณ์
+    const efficiencyFactor = (kwh * 1000) / watt;
+
+    if (efficiencyFactor < 0.8) {
+      return { label: "เบอร์ 5", stars: "⭐️⭐️⭐️" };
+    } else if (efficiencyFactor < 1.5) {
+      return { label: "เบอร์ 5", stars: "⭐️⭐️" };
+    } else if (efficiencyFactor < 3.0) {
+      return { label: "เบอร์ 5", stars: "⭐️" };
+    } else {
+      return { label: "เบอร์ 5", stars: "" };
+    }
+  }
+
   function renderBreakers() {
     const grid = document.getElementById("breakerGrid");
     const ids = Object.keys(devices);
@@ -820,6 +849,10 @@
       const iconHtml = isImg 
         ? `<img src="${iconStr}" class="breaker-icon-img">`
         : `<span class="breaker-icon-emoji">${iconStr}</span>`;
+
+      // คำนวณดาวเบอร์ 5
+      const energyLabelInfo = calculateEnergyLabel(dev.kwh, dev.watt);
+      const labelBadgeHtml = `<div class="energy-label-badge" title="ประเมินจากข้อมูลการใช้พลังงานจริง">⚡ ${energyLabelInfo.label} <span class="stars">${energyLabelInfo.stars}</span></div>`;
 
       const card = document.createElement("div");
       card.className = "breaker" + (isOn ? " is-on" : "");
@@ -842,12 +875,11 @@
           <button class="btn-action-icon btn-del" onclick="deleteDevice(event, '${id}')" title="ลบอุปกรณ์">🗑️</button>
         </div>
         <div class="breaker-top">
-          <div style="width:100%;">
-            <div class="breaker-num">${id.toUpperCase()} ${dev.pin ? '(GPIO '+dev.pin+')' : ''}</div>
-            <div class="breaker-name">
-              ${iconHtml}
-              <span>${dev.name}</span>
-            </div>
+          <div class="breaker-num">${id.toUpperCase()} ${dev.pin ? '(GPIO '+dev.pin+')' : ''}</div>
+          <div class="breaker-name">
+            ${iconHtml}
+            <span>${dev.name}</span>
+            ${labelBadgeHtml}
           </div>
         </div>
         <div class="breaker-mid">
