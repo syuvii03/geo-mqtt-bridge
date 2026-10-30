@@ -78,10 +78,10 @@
   .breaker-top { display: flex; justify-content: space-between; margin-bottom: 14px; padding-right: 32px; }
   .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
   
-  /* ปรับรูปแบบรูปภาพและ Emoji สำหรับการ์ดอุปกรณ์ */
-  .breaker-name { font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-  .breaker-icon-img { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-light); background: var(--panel-alt); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
-  .breaker-icon-emoji { font-size: 36px; line-height: 1.1; }
+  /* ปรับรูปแบบรูปภาพและ Emoji สำหรับการ์ดอุปกรณ์ให้ใหญ่ขึ้น */
+  .breaker-name { font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+  .breaker-icon-img { width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border-light); background: var(--panel-alt); box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+  .breaker-icon-emoji { font-size: 64px; line-height: 1.1; margin: 4px 0; }
 
   .led-del-wrap { display: flex; align-items: center; gap: 8px; position: absolute; top: 12px; right: 12px; z-index: 10; }
   .led { width: 10px; height: 10px; border-radius: 50%; background: var(--off-color); }
@@ -775,7 +775,7 @@
           <button class="btn-delete-dev" onclick="deleteDevice(event, '${id}')" title="ลบอุปกรณ์">🗑️</button>
         </div>
         <div class="breaker-top">
-          <div>
+          <div style="width:100%;">
             <div class="breaker-num">${id.toUpperCase()} ${dev.pin ? '(GPIO '+dev.pin+')' : ''}</div>
             <div class="breaker-name">
               ${iconHtml}
