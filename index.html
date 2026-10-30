@@ -75,10 +75,12 @@
   .breaker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
   .breaker { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 18px; transition: border-color 0.25s; position: relative; }
   .breaker.is-on { border-color: rgba(13,148,136,0.4); }
-  .breaker-top { display: flex; justify-content: space-between; margin-bottom: 14px; padding-right: 48px; }
-  .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 6px; }
   
-  /* ปรับรูปแบบรูปภาพและ Emoji ให้ใหญ่ขึ้นพิเศษ + จัดกึ่งกลาง */
+  /* จัดส่วนหัวของการ์ดให้อยู่กึ่งกลาง */
+  .breaker-top { display: flex; justify-content: center; width: 100%; margin-bottom: 14px; }
+  .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 6px; text-align: center; }
+  
+  /* ปรับรูปแบบรูปภาพและ Emoji ให้กึ่งกลางการ์ด */
   .breaker-name { font-size: 18px; font-weight: 700; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; width: 100%; margin-top: 4px; }
   .breaker-icon-img { width: 180px; height: 180px; object-fit: cover; border-radius: 16px; border: 1px solid var(--border-light); background: var(--panel-alt); box-shadow: 0 6px 14px rgba(0,0,0,0.1); }
   .breaker-icon-emoji { font-size: 80px; line-height: 1.1; margin: 8px 0; }
@@ -175,7 +177,7 @@
   .compare-val { width: 110px; flex-shrink: 0; text-align: right; }
   .compare-delta { margin-top: 4px; font-family: monospace; font-size: 12px; }
 
-  /* Modal Popup สำหรับเพิ่ม/แก้ไขอุปกรณ์ */
+  /* Modal Popup สำหรับ เพิ่ม/แก้ไข อุปกรณ์ */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
   .modal-overlay.hidden { display: none; }
   .modal-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
@@ -1720,4 +1722,3 @@
 </script>
 </body>
 </html>
-```eof
