@@ -72,31 +72,32 @@
 
   .rack-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px; }
   .rack-label { font-family: monospace; font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
-  .breaker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-bottom: 20px; }
-  .breaker { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: border-color 0.25s; position: relative; }
+  .breaker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .breaker { background: linear-gradient(180deg, var(--panel-raised), var(--panel)); border: 1px solid var(--border); border-radius: 12px; padding: 18px; transition: border-color 0.25s; position: relative; }
   .breaker.is-on { border-color: rgba(13,148,136,0.4); }
-  .breaker-top { display: flex; justify-content: space-between; margin-bottom: 14px; padding-right: 32px; }
-  .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
+  .breaker-top { display: flex; justify-content: space-between; margin-bottom: 14px; padding-right: 48px; }
+  .breaker-num { font-family: monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 6px; }
   
-  /* ปรับรูปแบบรูปภาพและ Emoji สำหรับการ์ดอุปกรณ์ให้ใหญ่ขึ้น */
-  .breaker-name { font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
-  .breaker-icon-img { width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border-light); background: var(--panel-alt); box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
-  .breaker-icon-emoji { font-size: 64px; line-height: 1.1; margin: 4px 0; }
+  /* ปรับรูปแบบรูปภาพและ Emoji ให้ใหญ่ขึ้นพิเศษ + จัดกึ่งกลาง */
+  .breaker-name { font-size: 18px; font-weight: 700; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; width: 100%; margin-top: 4px; }
+  .breaker-icon-img { width: 180px; height: 180px; object-fit: cover; border-radius: 16px; border: 1px solid var(--border-light); background: var(--panel-alt); box-shadow: 0 6px 14px rgba(0,0,0,0.1); }
+  .breaker-icon-emoji { font-size: 80px; line-height: 1.1; margin: 8px 0; }
 
-  .led-del-wrap { display: flex; align-items: center; gap: 8px; position: absolute; top: 12px; right: 12px; z-index: 10; }
-  .led { width: 10px; height: 10px; border-radius: 50%; background: var(--off-color); }
+  .led-del-wrap { display: flex; align-items: center; gap: 6px; position: absolute; top: 12px; right: 12px; z-index: 10; }
+  .led { width: 10px; height: 10px; border-radius: 50%; background: var(--off-color); margin-right: 2px; }
   .breaker.is-on .led { background: var(--on-color); box-shadow: 0 0 10px var(--on-glow); }
 
-  .btn-delete-dev { background: transparent; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; padding: 4px; border-radius: 4px; }
-  .btn-delete-dev:hover { color: var(--danger-color); background: rgba(220,38,38,0.1); }
+  .btn-action-icon { background: transparent; border: none; color: var(--text-dim); font-size: 15px; cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s; }
+  .btn-action-icon:hover { color: var(--text-primary); background: var(--panel-alt); }
+  .btn-action-icon.btn-del:hover { color: var(--danger-color); background: rgba(220,38,38,0.1); }
 
-  .breaker-mid { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
-  .status-text { font-family: monospace; font-size: 12px; color: var(--text-secondary); }
-  .breaker.is-on .status-text { color: var(--on-color); }
-  .switch-track { width: 44px; height: 72px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 4px; cursor: pointer; }
+  .breaker-mid { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+  .status-text { font-family: monospace; font-size: 13px; color: var(--text-secondary); }
+  .breaker.is-on .status-text { color: var(--on-color); font-weight: 600; }
+  .switch-track { width: 48px; height: 76px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 4px; cursor: pointer; }
   .switch-track.disabled { cursor: not-allowed; opacity: 0.5; }
-  .switch-thumb { width: 34px; height: 32px; background: var(--thumb-off); border-radius: 6px; transition: transform 0.2s ease; }
-  .switch-track.on .switch-thumb { transform: translateY(30px); background: #0D9488; box-shadow: 0 0 10px var(--on-glow); }
+  .switch-thumb { width: 38px; height: 34px; background: var(--thumb-off); border-radius: 6px; transition: transform 0.2s ease; }
+  .switch-track.on .switch-thumb { transform: translateY(32px); background: #0D9488; box-shadow: 0 0 10px var(--on-glow); }
 
   .device-cost { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-family: monospace; font-size: 12px; }
 
@@ -174,10 +175,10 @@
   .compare-val { width: 110px; flex-shrink: 0; text-align: right; }
   .compare-delta { margin-top: 4px; font-family: monospace; font-size: 12px; }
 
-  /* Modal Popup สำหรับเพิ่มอุปกรณ์ */
+  /* Modal Popup สำหรับเพิ่ม/แก้ไขอุปกรณ์ */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
   .modal-overlay.hidden { display: none; }
-  .modal-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+  .modal-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
   .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .modal-head h3 { font-size: 18px; font-weight: 700; }
   .modal-close { background: transparent; border: none; font-size: 18px; color: var(--text-dim); cursor: pointer; }
@@ -380,43 +381,46 @@
   </footer>
 </div>
 
-<!-- Modal สำหรับเพิ่มอุปกรณ์ -->
-<div class="modal-overlay hidden" id="addModal">
+<!-- Modal สำหรับ เพิ่ม/แก้ไข อุปกรณ์ -->
+<div class="modal-overlay hidden" id="devModal">
   <div class="modal-card">
     <div class="modal-head">
-      <h3>➕ เพิ่มอุปกรณ์ใหม่</h3>
-      <button class="modal-close" onclick="closeAddModal()">✕</button>
+      <h3 id="modalTitle">➕ เพิ่มอุปกรณ์ใหม่</h3>
+      <button class="modal-close" onclick="closeDevModal()">✕</button>
     </div>
-    <form onsubmit="handleAddDeviceSubmit(event)">
+    <form onsubmit="handleDevFormSubmit(event)">
+      <input type="hidden" id="modalDevMode" value="add">
+      <input type="hidden" id="modalOriginalId" value="">
+      
       <div class="form-group">
         <label>ID อุปกรณ์ (ภาษาอังกฤษ ห้ามซ้ำ)</label>
-        <input type="text" id="addDevId" required placeholder="เช่น device_a หรือ light_room1">
+        <input type="text" id="devId" required placeholder="เช่น device_a หรือ light_room1">
       </div>
       <div class="form-group">
         <label>ชื่ออุปกรณ์</label>
-        <input type="text" id="addDevName" required placeholder="เช่น โคมไฟ A, พัดลมโต๊ะทำงาน">
+        <input type="text" id="devName" required placeholder="เช่น โคมไฟ A, พัดลมโต๊ะทำงาน">
       </div>
       <div class="form-group">
         <label>ไอคอน (Emoji หรือ URL รูปภาพ)</label>
-        <input type="text" id="addDevIcon" placeholder="เช่น 💡 หรือ https://.../image.png">
+        <input type="text" id="devIcon" placeholder="เช่น 💡 หรือ https://.../image.png">
       </div>
       <div class="form-group">
-        <label>หรือ อัปโหลดรูปภาพจากเครื่อง</label>
-        <input type="file" id="addDevFile" accept="image/*" onchange="handleModalImageUpload(event)">
+        <label>หรือ อัปโหลดรูปภาพใหม่จากเครื่อง</label>
+        <input type="file" id="devFile" accept="image/*" onchange="handleModalImageUpload(event)">
       </div>
       <div style="display:flex; gap:10px;">
         <div class="form-group" style="flex:1;">
           <label>ขา GPIO</label>
-          <input type="number" id="addDevPin" required value="25">
+          <input type="number" id="devPin" required value="25">
         </div>
         <div class="form-group" style="flex:1;">
           <label>กำลังไฟ (วัตต์ / W)</label>
-          <input type="number" id="addDevWatt" required value="100">
+          <input type="number" id="devWatt" required value="100">
         </div>
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn-connect" onclick="closeAddModal()">ยกเลิก</button>
-        <button type="submit" class="btn-add">บันทึกอุปกรณ์</button>
+        <button type="button" class="btn-connect" onclick="closeDevModal()">ยกเลิก</button>
+        <button type="submit" class="btn-add" id="modalSubmitBtn">บันทึกอุปกรณ์</button>
       </div>
     </form>
   </div>
@@ -671,13 +675,57 @@
     client.publish(`${prefix}/${id}/set`, newState ? "ON" : "OFF");
   }
 
-  // ---------- ฟังก์ชัน Modal & เพิ่ม/ลบ อุปกรณ์ ----------
+  // ---------- ฟังก์ชัน Modal เพิ่ม / แก้ไข / ลบ อุปกรณ์ ----------
   function openAddModal() {
-    document.getElementById("addModal").classList.remove("hidden");
+    document.getElementById("modalTitle").textContent = "➕ เพิ่มอุปกรณ์ใหม่";
+    document.getElementById("modalDevMode").value = "add";
+    document.getElementById("modalOriginalId").value = "";
+    document.getElementById("modalSubmitBtn").textContent = "บันทึกอุปกรณ์";
+    
+    document.getElementById("devId").value = "";
+    document.getElementById("devId").disabled = false;
+    document.getElementById("devName").value = "";
+    document.getElementById("devIcon").value = "";
+    document.getElementById("devFile").value = "";
+    document.getElementById("devPin").value = "25";
+    document.getElementById("devWatt").value = "100";
+    
+    uploadedModalImage = "";
+    document.getElementById("devModal").classList.remove("hidden");
   }
 
-  function closeAddModal() {
-    document.getElementById("addModal").classList.add("hidden");
+  function openEditModal(e, id) {
+    e.stopPropagation();
+    const dev = devices[id];
+    if (!dev) return;
+
+    document.getElementById("modalTitle").textContent = "✏️ แก้ไขอุปกรณ์";
+    document.getElementById("modalDevMode").value = "edit";
+    document.getElementById("modalOriginalId").value = id;
+    document.getElementById("modalSubmitBtn").textContent = "บันทึกการแก้ไข";
+
+    document.getElementById("devId").value = id;
+    document.getElementById("devId").disabled = true; // ล็อค ID
+    document.getElementById("devName").value = dev.name || "";
+    
+    const iconStr = dev.icon || "";
+    if (iconStr.startsWith("data:image")) {
+      uploadedModalImage = iconStr;
+      document.getElementById("devIcon").value = "";
+    } else {
+      uploadedModalImage = "";
+      document.getElementById("devIcon").value = iconStr;
+    }
+    
+    document.getElementById("devFile").value = "";
+    document.getElementById("devPin").value = dev.pin || 25;
+    document.getElementById("devWatt").value = dev.watt || 100;
+
+    document.getElementById("devModal").classList.remove("hidden");
+  }
+
+  function closeDevModal() {
+    document.getElementById("devModal").classList.add("hidden");
     uploadedModalImage = "";
   }
 
@@ -692,39 +740,55 @@
     }
   }
 
-  function handleAddDeviceSubmit(e) {
+  function handleDevFormSubmit(e) {
     e.preventDefault();
-    const id = document.getElementById("addDevId").value.trim().toLowerCase().replace(/\s+/g, '_');
-    const name = document.getElementById("addDevName").value.trim();
-    const iconInput = document.getElementById("addDevIcon").value.trim();
-    const pin = parseInt(document.getElementById("addDevPin").value);
-    const watt = parseFloat(document.getElementById("addDevWatt").value);
+    const mode = document.getElementById("modalDevMode").value;
+    const origId = document.getElementById("modalOriginalId").value;
+    const id = document.getElementById("devId").value.trim().toLowerCase().replace(/\s+/g, '_');
+    const name = document.getElementById("devName").value.trim();
+    const iconInput = document.getElementById("devIcon").value.trim();
+    const pin = parseInt(document.getElementById("devPin").value);
+    const watt = parseFloat(document.getElementById("devWatt").value);
 
-    if (devices[id]) {
+    if (mode === "add" && devices[id]) {
       alert("❌ ID อุปกรณ์นี้มีอยู่แล้ว กรุณาใช้ ID อื่น");
       return;
     }
 
-    const finalIcon = uploadedModalImage || iconInput || "⚡";
+    let finalIcon = "⚡";
+    if (uploadedModalImage) {
+      finalIcon = uploadedModalImage;
+    } else if (iconInput) {
+      finalIcon = iconInput;
+    } else if (mode === "edit" && devices[origId]) {
+      finalIcon = devices[origId].icon;
+    }
 
-    devices[id] = {
-      name: name,
-      watt: watt,
-      state: false,
-      kwh: 0,
-      icon: finalIcon,
-      pin: pin
-    };
+    if (mode === "add") {
+      devices[id] = {
+        name: name,
+        watt: watt,
+        state: false,
+        kwh: 0,
+        icon: finalIcon,
+        pin: pin
+      };
+    } else if (mode === "edit" && devices[origId]) {
+      devices[origId].name = name;
+      devices[origId].watt = watt;
+      devices[origId].icon = finalIcon;
+      devices[origId].pin = pin;
+    }
 
     renderBreakers();
     renderChart();
     renderDeviceDonut();
     renderRankings();
-    closeAddModal();
+    closeDevModal();
   }
 
   function deleteDevice(e, id) {
-    e.stopPropagation(); // กัน event คลิกทะลุไปสวิตช์
+    e.stopPropagation();
     if (confirm(`คุณต้องการลบอุปกรณ์ [${devices[id].name}] หรือไม่?`)) {
       delete devices[id];
       delete historyData[id];
@@ -772,7 +836,8 @@
       card.innerHTML = `
         <div class="led-del-wrap">
           <div class="led"></div>
-          <button class="btn-delete-dev" onclick="deleteDevice(event, '${id}')" title="ลบอุปกรณ์">🗑️</button>
+          <button class="btn-action-icon" onclick="openEditModal(event, '${id}')" title="แก้ไขชื่อและรูป">✏️</button>
+          <button class="btn-action-icon btn-del" onclick="deleteDevice(event, '${id}')" title="ลบอุปกรณ์">🗑️</button>
         </div>
         <div class="breaker-top">
           <div style="width:100%;">
@@ -1655,3 +1720,4 @@
 </script>
 </body>
 </html>
+```eof
