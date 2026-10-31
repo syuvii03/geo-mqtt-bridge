@@ -314,16 +314,22 @@
     <div class="history-head">
       <div style="font-weight:700; font-size:20px;">ประวัติการใช้ไฟ</div>
       <div class="history-tabs">
-        <button class="history-tab active" id="tabToday" onclick="switchHistTab('today')">วันนี้</button>
+        <button class="history-tab active" id="tabToday" onclick="switchHistTab('today')">รายวัน (เลือกวัน)</button>
         <button class="history-tab" id="tabMonth" onclick="switchHistTab('month')">รายเดือน</button>
         <button class="history-tab" onclick="exportHistoryCsv()">⬇ CSV</button>
       </div>
     </div>
 
-    <!-- แท็บ วันนี้ -->
+    <!-- แท็บ รายวัน (เลือกวันได้เหมือนรายเดือน) -->
     <div id="todayView">
-      <div style="font-family:monospace; font-size:13px; color:var(--warn-color); margin-bottom:4px;" id="peakText">ช่วงพีคของวันนี้: -</div>
-      <div style="font-family:monospace; font-size:16px; font-weight:700; color:var(--text-primary);" id="todayTotalText">รวมวันนี้: 0.000 kWh · ฿0.00</div>
+      <div class="month-config-row">
+        <span>เลือกวันที่</span>
+        <input type="date" id="dayPicker" onchange="renderTodayBars()">
+        <button class="btn-connect" style="padding:6px 12px; font-size:13px;" onclick="setDayToToday()">วันนี้</button>
+      </div>
+
+      <div style="font-family:monospace; font-size:13px; color:var(--warn-color); margin-bottom:4px;" id="peakText">ช่วงพีคของวันที่เลือก: -</div>
+      <div style="font-family:monospace; font-size:16px; font-weight:700; color:var(--text-primary);" id="todayTotalText">รวมวันที่เลือก: 0.000 kWh · ฿0.00</div>
 
       <div class="period-cards">
         <div class="period-card">เช้า (06-12)<br><span id="p1" style="color:var(--on-color);">0.000 kWh</span></div>
@@ -332,10 +338,10 @@
         <div class="period-card">กลางคืน (22-06)<br><span id="p4" style="color:var(--on-color);">0.000 kWh</span></div>
       </div>
 
-      <div style="font-family:monospace; font-size:14px; font-weight:700; margin: 18px 0 8px;">การใช้ไฟรายชั่วโมง (วันนี้)</div>
+      <div style="font-family:monospace; font-size:14px; font-weight:700; margin: 18px 0 8px;" id="todayBarTitle">การใช้ไฟรายชั่วโมง</div>
       <div class="bar-chart-svg"><svg viewBox="0 0 500 150" id="todayBarSvg"></svg></div>
 
-      <div style="font-family:monospace; font-size:14px; font-weight:700; margin: 22px 0 10px;">อันดับและสัดส่วนการใช้ไฟแต่ละอุปกรณ์ (วันนี้)</div>
+      <div style="font-family:monospace; font-size:14px; font-weight:700; margin: 22px 0 10px;" id="todayDeviceTitle">อันดับและสัดส่วนการใช้ไฟแต่ละอุปกรณ์</div>
       <div id="todayDeviceBars"></div>
     </div>
 
@@ -405,7 +411,8 @@
   </div>
 
   <div class="util-row">
-    <button class="util-btn" onclick="exportCsv()">⬇ ส่งออก CSV</button>
+    <button class="util-btn" onclick="exportCsv()">⬇ ส่งออก CSV สรุปอุปกรณ์ปัจจุบัน</button>
+    <button class="util-btn" onclick="exportHistoryCsv()">⬇ ส่งออก CSV ประวัติรายวัน/รายเดือน</button>
   </div>
 
   <footer>
@@ -641,7 +648,7 @@
           } else {
             devices[key].watt = d.watt ?? devices[key].watt;
             devices[key].state = d.state ?? devices[key].state;
-            devices[key].kwh = d.kwh ?? devices[key].kwh;
+            devices[key].kwh = d.kwh ?? devices[key].kwh; // รับค่า kwh จาก telemetry มาอัปเดตอุปกรณ์
           }
         });
         renderBreakers();
@@ -838,16 +845,18 @@
   }
 
   function calculateEnergyLabel(kwh, watt) {
-    const kwhVal = kwh || 0;
-    const wattVal = watt || 1;
+    const kwhVal = parseFloat(kwh) || 0;
+    const wattVal = parseFloat(watt) || 1;
+
     const efficiencyFactor = (kwhVal * 1000) / wattVal;
 
     let stars = "";
     let starLevel = 0;
-    if (kwhVal >= 0.001) {
-      if (efficiencyFactor < 0.8) { stars = "⭐️⭐️⭐️"; starLevel = 3; }
-      else if (efficiencyFactor < 1.5) { stars = "⭐️⭐️"; starLevel = 2; }
-      else if (efficiencyFactor < 3.0) { stars = "⭐️"; starLevel = 1; }
+
+    if (kwhVal > 0) {
+      if (efficiencyFactor >= 3.0) { stars = "⭐️⭐️⭐️"; starLevel = 3; }
+      else if (efficiencyFactor >= 1.5) { stars = "⭐️⭐️"; starLevel = 2; }
+      else if (efficiencyFactor >= 0.8) { stars = "⭐️"; starLevel = 1; }
     }
 
     return {
@@ -880,7 +889,7 @@
         : `<span class="breaker-icon-emoji">${iconStr}</span>`;
 
       const info = calculateEnergyLabel(dev.kwh, dev.watt);
-      const labelBadgeHtml = `<div class="energy-label-badge" title="ประเมินจากข้อมูลการใช้พลังงานจริง">⚡ ${info.label} <span class="stars">${info.stars}</span></div>`;
+      const labelBadgeHtml = `<div class="energy-label-badge" title="ประเมินจากข้อมูลการใช้พลังงานจริง">⚡ ${info.label} ${info.stars ? '<span class="stars">' + info.stars + '</span>' : ''}</div>`;
 
       const calcBoxHtml = `
         <div class="calc-box">
@@ -889,10 +898,10 @@
           <div>• กำลังไฟฟ้า = ${info.watt} W</div>
           <div class="calc-formula">Ef = (${info.kwh} × 1000) / ${info.watt} = ${info.ef}</div>
           <div class="calc-criteria">
-            <div class="${info.starLevel === 3 ? 'active-criteria' : ''}"><span>Ef &lt; 0.80</span><span>⭐️⭐️⭐️ (3 ดาว)</span></div>
-            <div class="${info.starLevel === 2 ? 'active-criteria' : ''}"><span>0.80 ≤ Ef &lt; 1.50</span><span>⭐️⭐️ (2 ดาว)</span></div>
-            <div class="${info.starLevel === 1 ? 'active-criteria' : ''}"><span>1.50 ≤ Ef &lt; 3.00</span><span>⭐️ (1 ดาว)</span></div>
-            <div class="${info.starLevel === 0 ? 'active-criteria' : ''}"><span>Ef ≥ 3.00</span><span>เบอร์ 5 ปกติ</span></div>
+            <div class="${info.starLevel === 3 ? 'active-criteria' : ''}"><span>Ef ≥ 3.00</span><span>⭐️⭐️⭐️ (3 ดาว)</span></div>
+            <div class="${info.starLevel === 2 ? 'active-criteria' : ''}"><span>1.50 ≤ Ef &lt; 3.00</span><span>⭐️⭐️ (2 ดาว)</span></div>
+            <div class="${info.starLevel === 1 ? 'active-criteria' : ''}"><span>0.80 ≤ Ef &lt; 1.50</span><span>⭐️ (1 ดาว)</span></div>
+            <div class="${info.starLevel === 0 ? 'active-criteria' : ''}"><span>Ef &lt; 0.80</span><span>เบอร์ 5 ปกติ</span></div>
           </div>
         </div>
       `;
@@ -1336,15 +1345,15 @@
   }
 
   function exportCsv() {
-    let csv = "Device,Watt,kWh,Cost\n";
+    let csv = "Device ID,Device Name,Watt,kWh,Cost (THB)\n";
     Object.keys(devices).forEach(id => {
       const d = devices[id];
-      csv += `${d.name},${d.watt},${(d.kwh || 0).toFixed(4)},${((d.kwh || 0) * rate).toFixed(2)}\n`;
+      csv += `${id},"${d.name}",${d.watt},${(d.kwh || 0).toFixed(4)},${((d.kwh || 0) * rate).toFixed(2)}\n`;
     });
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "energy-report.csv";
+    a.download = "current-devices-report.csv";
     a.click();
   }
 
@@ -1395,8 +1404,11 @@
       document.getElementById("budgetInput").value = hist.budget;
     }
     
+    const dp = document.getElementById("dayPicker");
+    if (dp && !dp.value) dp.value = todayKey();
+
     const mp = document.getElementById("monthPicker");
-    if (!mp.value) mp.value = "2026-08";
+    if (mp && !mp.value) mp.value = todayKey().slice(0,7);
   }
 
   function saveHistoryLocal() {
@@ -1522,6 +1534,11 @@
     document.getElementById("monthView").style.display = t === 'month' ? 'block' : 'none';
   }
 
+  function setDayToToday() {
+    document.getElementById("dayPicker").value = todayKey();
+    renderTodayBars();
+  }
+
   function onBudgetChange() {
     hist.budget = parseFloat(document.getElementById("budgetInput").value) || null;
     saveHistory();
@@ -1529,10 +1546,17 @@
     updateEnergyAdvice();
   }
 
+  /* แสดงข้อมูลรายวัน (เลือกวันที่ได้ย้อนหลัง) */
   function renderTodayBars() {
     const svg = document.getElementById("todayBarSvg");
     svg.innerHTML = "";
-    const dKey = todayKey();
+    
+    let dKey = document.getElementById("dayPicker").value;
+    if (!dKey) {
+      dKey = todayKey();
+      document.getElementById("dayPicker").value = dKey;
+    }
+
     const hoursData = hist.hourly[dKey] || new Array(24).fill(0);
     const maxVal = Math.max(...hoursData, 0.1);
 
@@ -1545,14 +1569,16 @@
     document.getElementById("p3").textContent = p3.toFixed(3)+" kWh";
     document.getElementById("p4").textContent = p4.toFixed(3)+" kWh";
 
-    const totalToday = hoursData.reduce((a,b)=>a+b,0);
-    document.getElementById("todayTotalText").textContent = `รวมวันนี้: ${totalToday.toFixed(3)} kWh · ฿${(totalToday*rate).toFixed(2)}`;
+    const totalSelectedDay = hist.daily[dKey] || hoursData.reduce((a,b)=>a+b,0);
+    document.getElementById("todayTotalText").textContent = `รวมวันที่ ${dKey}: ${totalSelectedDay.toFixed(3)} kWh · ฿${(totalSelectedDay*rate).toFixed(2)}`;
+    document.getElementById("todayBarTitle").textContent = `การใช้ไฟรายชั่วโมง (${dKey})`;
+    document.getElementById("todayDeviceTitle").textContent = `อันดับและสัดส่วนการใช้ไฟแต่ละอุปกรณ์ (${dKey})`;
 
     let peakHour=0, maxPeak=0;
     hoursData.forEach((v,h) => { if (v>maxPeak) { maxPeak=v; peakHour=h; } });
     document.getElementById("peakText").textContent = maxPeak > 0
-      ? `ช่วงพีคของวันนี้: ${String(peakHour).padStart(2,'0')}:00-${String((peakHour+1)%24).padStart(2,'0')}:00 (${maxPeak.toFixed(3)} kWh)`
-      : `ช่วงพีคของวันนี้: -`;
+      ? `ช่วงพีคของวันที่ ${dKey}: ${String(peakHour).padStart(2,'0')}:00-${String((peakHour+1)%24).padStart(2,'0')}:00 (${maxPeak.toFixed(3)} kWh)`
+      : `ช่วงพีคของวันที่ ${dKey}: -`;
 
     hoursData.forEach((val,i) => {
       const x = i*20+8;
@@ -1570,12 +1596,14 @@
         svg.appendChild(text);
       }
     });
+
+    renderAllDeviceStats();
   }
 
   function renderMonthBars() {
     const svg = document.getElementById("monthBarSvg");
     svg.innerHTML = "";
-    const monthStr = document.getElementById("monthPicker").value || "2026-08";
+    const monthStr = document.getElementById("monthPicker").value || todayKey().slice(0,7);
     const [y, m] = monthStr.split('-').map(Number);
     const daysInMonth = new Date(y, m, 0).getDate();
 
@@ -1698,8 +1726,8 @@
   function renderAllDeviceStats() {
     const ids = Object.keys(devices);
 
-    // --- 1. คำนวณและวาดแท่งของ "วันนี้" (เรียงลำดับมากไปน้อย + บอก %) ---
-    const dKey = todayKey();
+    // --- 1. คำนวณและวาดแท่งของ "วันที่เลือก" ---
+    const dKey = document.getElementById("dayPicker").value || todayKey();
     const rawToday = hist.deviceDaily[dKey] || {};
     const itemsToday = ids.map((id, i) => ({
       id,
@@ -1730,8 +1758,8 @@
       }).join("");
     }
 
-    // --- 2. คำนวณและวาดแท่งของ "รายเดือน" (เรียงลำดับมากไปน้อย + บอก %) ---
-    const monthStr = document.getElementById("monthPicker").value || "2026-08";
+    // --- 2. คำนวณและวาดแท่งของ "รายเดือน" ---
+    const monthStr = document.getElementById("monthPicker").value || todayKey().slice(0,7);
     const [y, m] = monthStr.split('-').map(Number);
     const daysInMonth = new Date(y, m, 0).getDate();
 
@@ -1786,7 +1814,7 @@
 
   function updateEnergyAdvice() {
     const adviceBox = document.getElementById("adviceText");
-    const dKey = todayKey();
+    const dKey = document.getElementById("dayPicker").value || todayKey();
     const hoursData = hist.hourly[dKey] || new Array(24).fill(0);
     const totalToday = hoursData.reduce((a,b)=>a+b,0);
 
@@ -1840,15 +1868,36 @@
     adviceBox.textContent = "→ การใช้พลังงานอยู่ในเกณฑ์ปกติ";
   }
 
+  /* ส่งออก CSV รวมประวัติรายวัน/รายเดือนแบบสมบูรณ์ เปิดดูใน Excel ได้ง่าย (บังคับ Text Format ป้องกัน ######) */
   function exportHistoryCsv() {
-    let csv = "Date,Hour,kWh\n";
-    Object.keys(hist.hourly).sort().forEach(dKey => {
-      hist.hourly[dKey].forEach((v,h) => { if (v>0) csv += `${dKey},${h}:00,${v.toFixed(4)}\n`; });
+    const devIds = Object.keys(devices);
+    const devHeaders = devIds.map(id => `"${devices[id].name} (kWh)"`).join(",");
+    
+    let csv = `Month,Date,Total kWh,Estimated Cost (THB),${devHeaders}\n`;
+
+    const sortedDates = Object.keys(hist.daily).sort();
+    
+    sortedDates.forEach(dKey => {
+      const monthStr = dKey.slice(0,7);
+      const dayKwh = hist.daily[dKey] || 0;
+      const dayCost = (dayKwh * rate).toFixed(2);
+      
+      // บังคับรูปแบบ Text สำหรับ Excel ด้วย ="" เพื่อไม่ให้ Excel Auto-format เป็น Date แล้วติด ######
+      const parts = dKey.split('-');
+      const formattedDate = `="${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}/${parts[0]}"`;
+      
+      const devKwhCols = devIds.map(id => {
+        const val = (hist.deviceDaily[dKey] && hist.deviceDaily[dKey][id]) || 0;
+        return val.toFixed(4);
+      }).join(",");
+
+      csv += `${monthStr},${formattedDate},${dayKwh.toFixed(4)},${dayCost},${devKwhCols}\n`;
     });
-    const blob = new Blob([csv], { type: "text/csv" });
+
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "energy-report.csv";
+    a.download = `energy-history-monthly-report.csv`;
     a.click();
   }
 
